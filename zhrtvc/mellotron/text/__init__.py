@@ -10,6 +10,7 @@ from .parse_ssml import convert_ssml
 # 韵律
 # ! ? . , ; : " # ( )
 aishell3_symbol2phoneme = {'%': '"', '$': ':'}
+biaobei_symbol2phoneme = {'#1': '"', '#2': '%', '#3': ':', '#4': '$'}
 
 
 def fix_rhythm(src):
@@ -68,6 +69,14 @@ def text_to_sequence(text, cleaner_names, **kwargs):
             pin_lst.extend(tmp.split())
         pin_text = ' '.join(pin_lst)
         seq = text_to_sequence_phkit(pin_text, cleaner_names='pinyin')
+    elif cleaner_names == 'biaobei':
+        pin_lst = []
+        for w in text.split():
+            tmp = biaobei_symbol2phoneme.get(w, w)
+            tmp = fix_erhua(tmp)
+            pin_lst.extend(tmp.split())
+        pin_text = ' '.join(pin_lst)
+        seq = text_to_sequence_phkit(pin_text, cleaner_names='pinyin')
     else:
         seq = text_to_sequence_phkit(text, cleaner_names=cleaner_names)
     return seq
@@ -75,10 +84,15 @@ def text_to_sequence(text, cleaner_names, **kwargs):
 
 if __name__ == "__main__":
     print(__file__)
+    biaobei_text = 'bao2 ma3 #1 pei4 gua4 #1 bo3 luo2 an1 #3 ， diao1 chan2 #1 yuan4 zhen3 #2 dong3 weng1 ta4 #4 。'
     aishell3_text = 'zhun1 zhong4 % ke1 xue2 % gui1 lv4 de5 % yao1 qiu2 $'
     pinyin_text = "ka3 er3 pu3 pei2 wai4 sun1 wan2 hua2 ti1 . "
     ssml_text = '<speak><phoneme alphabet="py" ph="gan4 ma2 a5 ni3">干嘛啊你</phoneme>？为什么？<phoneme alphabet="py" ph="you4 lai2">又来</phoneme><phoneme alphabet="py" ph="gou1 da5 shei2">勾搭谁</phoneme>。</speak>'
     hanzi_text = '你好。'
+
+    out = text_to_sequence(biaobei_text, cleaner_names='biaobei')
+    print(sequence_to_text(out))
+    # k a 3 - ee er 2 - p u 3 - p ei 2 - uu uai 4 - s un 1 - uu uan 2 - h ua 2 - t i 1 - . - ~ _
 
     out = text_to_sequence(aishell3_text, cleaner_names='aishell3')
     print(sequence_to_text(out))

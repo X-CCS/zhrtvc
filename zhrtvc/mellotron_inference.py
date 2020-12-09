@@ -18,12 +18,12 @@ import os
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--checkpoint_path', type=str,
-                        default=r"../models/mellotron/samples/checkpoint-000000.pt",
+                        default=r"../models/mellotron/samples/checkpoint/checkpoint-000000.pt",
                         help='模型路径。')
     parser.add_argument('-s', '--speakers_path', type=str,
                         default=r"../models/mellotron/samples/metadata/speakers.json",
                         help='发音人映射表路径。')
-    parser.add_argument("-o", "--out_dir", type=Path, default=r"../models/mellotron/samples/test",
+    parser.add_argument("-o", "--out_dir", type=Path, default=r"../models/mellotron/samples/test/000000",
                         help='保存合成的数据路径。')
     parser.add_argument("-p", "--play", type=int, default=0,
                         help='是否合成语音后自动播放语音。')
@@ -47,25 +47,50 @@ args = parse_args()
 
 os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda
 
+import matplotlib.pyplot as plt
 import aukit
 import time
 import json
 import traceback
 import torch
 import numpy as np
+import shutil
+import re
 
-from mellotron.inference import create_hparams, load_model_mellotron, MellotronSynthesizer, griffinlim_vocoder
+import unidecode
+
+from mellotron.inference import MellotronSynthesizer
 from mellotron.inference import save_model
 from utils.texthelper import xinqing_texts
 
 aliaudio_fpaths = [str(w) for w in sorted(Path(r'../data/samples/aliaudio').glob('*/*.mp3'))]
+filename_formatter_re = re.compile(r'[\s\\/:*?"<>|\']+')
+
+
+def plot_mel_alignment_gate_audio(mel, alignment, gate, audio, figsize=(16, 16)):
+    fig, axes = plt.subplots(4, 1, figsize=figsize)
+    axes = axes.flatten()
+    axes[0].imshow(mel, aspect='auto', origin='bottom', interpolation='none')
+    axes[1].imshow(alignment, aspect='auto', origin='bottom', interpolation='none')
+    axes[2].scatter(range(len(gate)), gate, alpha=0.5, color='red', marker='.', s=1)
+    axes[2].set_xlim(0, len(gate))
+    axes[3].scatter(range(len(audio)), audio, alpha=0.5, color='blue', marker='.', s=1)
+    axes[3].set_xlim(0, len(audio))
+
+    axes[0].set_title("mel")
+    axes[1].set_title("alignment")
+    axes[2].set_title("gate")
+    axes[3].set_title("audio")
+
+    plt.tight_layout()
+
 
 if __name__ == "__main__":
-    args_hparams = open(args.hparams_path, encoding='utf8').read()
-    _hparams = create_hparams(args_hparams)
-
-    model_path = args.checkpoint_path
-    load_model_mellotron(model_path, hparams=_hparams)
+    # args_hparams = open(args.hparams_path, encoding='utf8').read()
+    # _hparams = create_hparams(args_hparams)
+    #
+    # model_path = args.checkpoint_path
+    # load_model_mellotron(model_path, hparams=_hparams)
 
     ## Print some environment information (for debugging purposes)
     print("Running a test of your configuration...\n")
@@ -87,14 +112,15 @@ if __name__ == "__main__":
     if args.save_model_path:
         save_model(msyner, args.save_model_path)
 
-    spec = msyner.synthesize(text='你好，欢迎使用语言合成服务。', speaker='speaker')
+    spec = msyner.synthesize(text='你好，欢迎使用语言合成服务。', speaker='speaker', audio=np.random.random(22050) * 2 - 1)
 
     ## Run a test
-    # spec, align = synthesize_one('你好，欢迎使用语言合成服务。', aliaudio_fpaths[0], with_alignment=True,
-    #                              hparams=_hparams, encoder_fpath=args.encoder_model_fpath)
+
+
     print("Spectrogram shape: {}".format(spec.shape))
     # print("Alignment shape: {}".format(align.shape))
-    wav = griffinlim_vocoder(spec)
+    wav_inputs = msyner.stft.griffin_lim(torch.from_numpy(spec[None]))
+    wav = wav_inputs[0].cpu().numpy()
     print("Waveform shape: {}".format(wav.shape))
 
     print("All test passed! You can now synthesize speech.\n\n")
@@ -108,46 +134,62 @@ if __name__ == "__main__":
     example_fpaths = aliaudio_fpaths
     while True:
         try:
-            # Get the reference audio filepath
             speaker = input("Speaker:\n")
             if not speaker.strip():
                 speaker = np.random.choice(speaker_names)
             print('Speaker: {}'.format(speaker))
 
-            ## Generating the spectrogram
             text = input("Text:\n")
             if not text.strip():
                 text = np.random.choice(example_texts)
             print('Text: {}'.format(text))
+
+            audio = input("Audio:\n")
+            if not audio.strip():
+                audio = np.random.choice(aliaudio_fpaths)
+            print('Audio: {}'.format(audio))
+
             # The synthesizer works in batch, so you need to put your data in a list or numpy array
 
             print("Creating the spectrogram ...")
-            spec = msyner.synthesize(text=text, speaker=speaker)
-            # spec, align = synthesize_one(text, speaker=speaker, with_alignment=True,
-            #                              hparams=_hparams, encoder_fpath=args.encoder_model_fpath)
+            spec, align, gate = msyner.synthesize(text=text, speaker=speaker, audio=audio, with_show=True)
+
             print("Spectrogram shape: {}".format(spec.shape))
-            # print("Alignment shape: {}".format(align.shape))
+            print("Alignment shape: {}".format(align.shape))
+
             ## Generating the waveform
             print("Synthesizing the waveform ...")
-            wav = griffinlim_vocoder(spec)
+
+            wav_outputs = msyner.stft.griffin_lim(torch.from_numpy(spec[None]), n_iters=30)
+            wav_output = wav_outputs[0].cpu().numpy()
+
             print("Waveform shape: {}".format(wav.shape))
 
             # Save it on the disk
-            cur_time = time.strftime('%Y%m%d_%H%M%S')
-            fpath = args.out_dir.joinpath("demo_out_{}.wav".format(cur_time))
-            # librosa.output.write_wav(fpath, generated_wav.astype(np.float32), synthesizer.sample_rate)
-            aukit.save_wav(wav, fpath, sr=_hparams.sampling_rate)  # save
+            cur_text = filename_formatter_re.sub('', unidecode.unidecode(text))[:15]
+            cur_time = time.strftime('%Y%m%d-%H%M%S')
+            out_path = args.out_dir.joinpath("demo_{}_{}_out.wav".format(cur_time, cur_text))
+            aukit.save_wav(wav_output, out_path, sr=msyner.stft.sampling_rate)  # save
+
+            ref_path = args.out_dir.joinpath("demo_{}_{}_ref.wav".format(cur_time, cur_text))
+            shutil.copyfile(audio, out_path)
+
+            fig_path = args.out_dir.joinpath("demo_{}_{}_fig.jpg".format(cur_time, cur_text))
+            plot_mel_alignment_gate_audio(spec, align, gate, wav[::16])
+            plt.savefig(fig_path)
+            plt.close()
 
             txt_path = args.out_dir.joinpath("info_dict.txt".format(cur_time))
             with open(txt_path, 'at', encoding='utf8') as fout:
-                dt = dict(text=text, audio_path=str(fpath), speaker=speaker, time=cur_time)
+                dt = {k: (str(v) if isinstance(v, Path) else v) for k, v in locals().items()
+                      if isinstance(v, (int, float, str, Path, bool))}
                 out = json.dumps(dt, ensure_ascii=False)
                 fout.write('{}\n'.format(out))
 
             num_generated += 1
-            print("\nSaved output as %s\n\n" % fpath)
+            print("\nSaved output as %s\n\n" % out_path)
             if args.play:
-                aukit.play_audio(fpath, sr=_hparams.sampling_rate)
+                aukit.play_audio(out_path, sr=msyner.stft.sampling_rate)
         except Exception as e:
             print("Caught exception: %s" % repr(e))
             print("Restarting\n")

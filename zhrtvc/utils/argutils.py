@@ -43,3 +43,19 @@ def args2dict(args: argparse.Namespace, parser=None):
 
     out = {items[i][0]: items[i][1] for i in indices}
     return out
+
+
+def locals2dict(src: dict):
+    outdt = {}
+    for key, value in src.items():
+        if isinstance(value, Path):
+            outdt[key] = str(value)
+        elif type(value) in _type_priorities:
+            outdt[key] = value
+        elif 'shape' in dir(value):
+            outdt['{}_shape'.format(key)] = str(value.shape)
+        elif 'size' in dir(value):
+            outdt['{}_size'.format(key)] = str(value.size())
+        elif '__len__' in dir(value):
+            outdt['{}_len'.format(key)] = str(value.__len__)
+    return outdt

@@ -5,7 +5,7 @@ import yaml
 import torch
 
 from mellotron.hparams import create_hparams
-from mellotron.train import train, json_dump, parse_args
+from mellotron.train import train, json_dump, parse_args, yaml_dump
 
 args = parse_args()
 
@@ -19,7 +19,7 @@ if __name__ == '__main__':
     except ImportError:
         pass
 
-    hparams = create_hparams(args.hparams)
+    hparams = create_hparams(args.hparams_json)
 
     torch.backends.cudnn.enabled = hparams.cudnn_enabled
     torch.backends.cudnn.benchmark = hparams.cudnn_benchmark
@@ -33,9 +33,10 @@ if __name__ == '__main__':
     meta_folder = os.path.join(args.output_directory, 'metadata')
     os.makedirs(meta_folder, exist_ok=True)
 
-    path = os.path.join(meta_folder, "args.json")
+    stem_path = os.path.join(meta_folder, "args")
     obj = args.__dict__
-    json_dump(obj, path)
+    json_dump(obj, f'{stem_path}.json')
+    yaml_dump(obj, f'{stem_path}.yml')
 
     print('{}\nargs:'.format('-' * 50))
     print(yaml.dump(args.__dict__))
@@ -43,5 +44,4 @@ if __name__ == '__main__':
     print('{}\nhparams:'.format('-' * 50))
     print(yaml.dump({k: v for k, v in hparams.items()}))
 
-    train(args.input_directory, args.output_directory, args.log_directory, args.checkpoint_path,
-          args.warm_start, args.n_gpus, args.rank, args.group_name, hparams)
+    train(hparams=hparams, **args.__dict__)

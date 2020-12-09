@@ -26,7 +26,7 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         ################################
         # Data Parameters             #
         ################################
-        train_mode='train-gst',
+        train_mode='train-tacotron',
         # f01:用基频，prenet_f0_dim=1。
         # f02:用基频均值填充，prenet_f0_dim=1。
         # f03:用零向量代替基频，prenet_f0_dim=1。
@@ -34,13 +34,14 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         # f05s02:用speaker_id等距分配代替基频，speaker_id用0表示，prenet_f0_dim=0。
         # f06s02:用语音的embed向量代替，基频speaker_id用0表示，prenet_f0_dim=8。
         # gst:用gst模式，把speaker_id用0表示，prenet_f0_dim=0, token_embedding_size=64 * level, with_gst=True。
+        # tacotron:用tacotron模式，把speaker_id用0表示，prenet_f0_dim=0, token_embedding_size=0, with_gst=False。
 
         # training_files=r"../../data/SV2TTS/mellotron/samples_ssml/train.txt",
         # 文件一行记录一个语音信息，每行的数据结构：数据文件夹名\t语音源文件\t文本\t说话人名称\n，样例如下：
         # 000000	Aibao/005397.mp3	他走近钢琴并开始演奏“祖国从哪里开始”。	0
         # validation_files=r"../../data/SV2TTS/mellotron/samples_ssml/validation.txt",
         # 'filelists/ljs_audiopaths_text_sid_val_filelist.txt',
-        text_cleaners='aishell3',  # ['chinese_cleaners'],
+        text_cleaners='biaobei',  # ['chinese_cleaners'],
         p_arpabet=1.0,
         cmudict_path=None,  # "data/cmu_dictionary",
 
@@ -54,7 +55,7 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         win_length=1024,  # hparams_griffinlim.win_size,  # 1024,
         n_mel_channels=80,  # 401,  # 80,
         mel_fmin=0.0,
-        mel_fmax=None,  # 8000.0,
+        mel_fmax=8000.0,  # 8000.0,
         f0_min=80,
         f0_max=880,
         harm_thresh=0.25,
@@ -103,7 +104,7 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         speaker_embedding_dim=16 * level,  # 32 * level,  # 128,
 
         # Reference encoder
-        with_gst=True,  # True,
+        with_gst=False,  # True,
         ref_enc_filters=[8 * level, 8 * level, 16 * level, 16 * level, 32 * level, 32 * level],
         # [32, 32, 64, 64, 128, 128],
         ref_enc_size=[3, 3],
@@ -112,7 +113,7 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         ref_enc_gru_size=32 * level,  # 128,
 
         # Style Token Layer
-        token_embedding_size=64 * level,  # 64 * level,  # 256,  # 如果with_gst=False，则手动改为0。
+        token_embedding_size=0,  # 64 * level,  # 256,  # 如果with_gst=False，则手动改为0。
         token_num=10,
         num_heads=8,
 

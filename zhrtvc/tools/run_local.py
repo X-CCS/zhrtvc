@@ -67,7 +67,8 @@ def get_train_files(indir: Path):
 
 
 _hanzi_re = re.compile(r'[\u4E00-\u9FA5]')
-_pause_dict = {'#1': '%', '#2': '%', '#3': '$', '#4': '$'}
+_pause_aishell3_style_dict = {'#1': '%', '#2': '%', '#3': '$', '#4': '$'}
+_pause_dict = {'#1': '#1', '#2': '#2', '#3': '#3', '#4': '#4'}
 
 
 def convert_line(line):
@@ -92,8 +93,8 @@ def convert_line(line):
                             pny = pnys[cnt]
                             outs.append(pny)
                             cnt += 1
-                # else:
-                #     outs.append(zi)
+                else:
+                    outs.append(zi)
     out_text = ' '.join(outs)
     # out_line = f'{index}|{out_text}|{han_text}\n'
     out_line = f'wav/biaobei/{index}.wav\t{out_text}\tbiaobei\n'
@@ -105,7 +106,7 @@ def biaobei2aishell3():
     000085	现在是#2道儿#2越走#1越宽#3，人气#2越搞#1越旺#4。	xian4 zai4 shi4 daor4 yue4 zou3 yue4 kuan1 ren2 qi4 yue4 gao3 yue4 wang4
     """
     inpath = r'F:\bigdata\public_audio\bznsyp\metadata.csv'
-    outpath = r'F:\bigdata\public_audio\bznsyp\train.txt'
+    outpath = r'F:\bigdata\public_audio\bznsyp\train_biaobei.txt'
 
     with open(outpath, 'wt', encoding='utf8') as fout:
         for num, line in enumerate(tqdm(open(inpath, encoding='utf8'))):

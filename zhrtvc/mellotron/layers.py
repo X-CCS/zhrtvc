@@ -55,7 +55,7 @@ class ConvNorm2D(torch.nn.Module):
 class TacotronSTFT(torch.nn.Module):
     def __init__(self, filter_length=1024, hop_length=256, win_length=1024,
                  n_mel_channels=80, sampling_rate=22050, mel_fmin=0.0,
-                 mel_fmax=8000.0):
+                 mel_fmax=None, **kwargs):
         super(TacotronSTFT, self).__init__()
         self.n_mel_channels = n_mel_channels
         self.sampling_rate = sampling_rate
@@ -95,7 +95,7 @@ class TacotronSTFT(torch.nn.Module):
     def griffin_lim(self, x, n_iters=60):
         mel_decompress = self.spectral_de_normalize(x)
         mel_decompress = mel_decompress.transpose(1, 2).data.cpu()
-        spec_from_mel_scaling = 1000
+        spec_from_mel_scaling = 100
         spec_from_mel = torch.mm(mel_decompress[0], self.mel_basis)
         spec_from_mel = spec_from_mel.transpose(0, 1).unsqueeze(0)
         spec_from_mel = spec_from_mel * spec_from_mel_scaling

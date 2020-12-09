@@ -5,13 +5,15 @@ from tensorboardX import SummaryWriter
 
 from .plotting_utils import plot_alignment_to_numpy, plot_spectrogram_to_numpy
 from .plotting_utils import plot_gate_outputs_to_numpy
-from .utils import inv_linearspectrogram, default_hparams
+# from .utils import inv_linearspectrogram, default_hparams
 from .text import sequence_to_text
+from .layers import TacotronSTFT
 
 
 class Tacotron2Logger(SummaryWriter):
-    def __init__(self, logdir):
+    def __init__(self, logdir, hparams=None):
         super(Tacotron2Logger, self).__init__(logdir)
+        self.stft = TacotronSTFT(**{k: v for k, v in hparams.items()})
 
     def log_training(self, reduced_loss, grad_norm, learning_rate, duration,
                      iteration):
@@ -48,21 +50,22 @@ class Tacotron2Logger(SummaryWriter):
                 torch.sigmoid(gate_outputs[idx]).data.cpu().numpy()),
             iteration, dataformats='HWC')
         # 记录一下合成的语音效果。
-        audio_predicted = inv_linearspectrogram(mel_outputs[idx].data.cpu().numpy())
+        audio_predicted = self.stft.griffin_lim(mel_outputs[idx].unsqueeze(0))[0]
         self.add_audio(
             'audio_predicted',
-            torch.from_numpy(audio_predicted),
-            iteration, sample_rate=default_hparams.sample_rate
+            audio_predicted,
+            iteration, sample_rate=self.stft.sampling_rate
         )
         self.add_image(
             "mel_target",
             plot_spectrogram_to_numpy(mel_targets[idx].data.cpu().numpy()),
             iteration, dataformats='HWC')
-        audio_target = inv_linearspectrogram(mel_targets[idx].data.cpu().numpy())
+
+        audio_target = self.stft.griffin_lim(mel_targets[idx].unsqueeze(0))[0]
         self.add_audio(
             'audio_target',
-            torch.from_numpy(audio_target),
-            iteration, sample_rate=default_hparams.sample_rate
+            audio_target,
+            iteration, sample_rate=self.stft.sampling_rate
         )
 
         spk = int(speaker_ids[idx].data.cpu().numpy().flatten()[0])
@@ -70,8 +73,8 @@ class Tacotron2Logger(SummaryWriter):
         phs_text = sequence_to_text(ph_ids)
         phs_size = len(ph_ids)
         reduced_loss = float(reduced_loss)
-        audt_duration = int(len(audio_target) / (default_hparams.sample_rate / 1000))
-        audp_duration = int(len(audio_predicted) / (default_hparams.sample_rate / 1000))
+        audt_duration = int(len(audio_target) / (self.stft.sampling_rate / 1000))
+        audp_duration = int(len(audio_predicted) / (self.stft.sampling_rate / 1000))
         spect_shape = mel_targets[idx].data.cpu().numpy().shape
         specp_shape = mel_outputs[idx].data.cpu().numpy().shape
         align_shape = alignments[idx].data.cpu().numpy().T.shape

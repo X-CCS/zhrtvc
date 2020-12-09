@@ -28,6 +28,7 @@ from .hparams import create_hparams
 from .utils import inv_linearspectrogram
 from .plotting_utils import plot_mel_alignment_gate_audio
 from .audio_processing import griffin_lim, dynamic_range_decompression
+from .text.symbols import symbols
 
 _device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -50,8 +51,8 @@ def parse_args():
                         required=False, help='rank of current gpu')
     parser.add_argument('--group_name', type=str, default='group_name',
                         required=False, help='Distributed group name')
-    parser.add_argument('--hparams', type=str,
-                        default='{"batch_size":4,"iters_per_checkpoint":10,"learning_rate":0.001,"dataloader_num_workers":1}',
+    parser.add_argument('--hparams_json', type=str,
+                        default='{"batch_size":4,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":1}',
                         required=False, help='comma separated name=value pairs')
     parser.add_argument("--cuda", type=str, default='-1',
                         help='设置CUDA_VISIBLE_DEVICES')
@@ -68,6 +69,11 @@ def json_dump(obj, path):
         if obj != dt:
             path = "{}_{}.json".format(os.path.splitext(path)[0], time.strftime("%Y%m%d-%H%M%S"))
     json.dump(obj, open(path, "wt", encoding="utf8"), indent=4, ensure_ascii=False)
+
+
+def yaml_dump(obj, path):
+    with open(path, "wt", encoding='utf8') as fout:
+        yaml.dump(obj, fout, default_flow_style=False, encoding='utf-8', allow_unicode=True)
 
 
 def reduce_tensor(tensor, n_gpus):
@@ -113,12 +119,12 @@ def prepare_dataloaders(input_directory, hparams):
     return train_loader, valset, collate_fn, train_sampler
 
 
-def prepare_directories_and_logger(output_directory, log_directory, rank):
+def prepare_directories_and_logger(output_directory, log_directory, rank, hparams=None):
     if rank == 0:
         if not os.path.isdir(output_directory):
             os.makedirs(output_directory)
             os.chmod(output_directory, 0o775)
-        logger = Tacotron2Logger(os.path.join(output_directory, log_directory))
+        logger = Tacotron2Logger(os.path.join(output_directory, log_directory), hparams=hparams)
     else:
         logger = None
     return logger
@@ -231,7 +237,7 @@ def validate(model, criterion, valset, iteration, batch_size, n_gpus,
 
 
 def train(input_directory, output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
-          rank, group_name, hparams):
+          rank, group_name, hparams, **kwargs):
     """Training and validation logging results to tensorboard and stdout
 
     Params
@@ -265,7 +271,7 @@ def train(input_directory, output_directory, log_directory, checkpoint_path, war
     criterion = Tacotron2Loss()
 
     logger = prepare_directories_and_logger(
-        output_directory, log_directory, rank)
+        output_directory, log_directory, rank, hparams=hparams)
 
     # 记录训练的元数据。
     meta_folder = os.path.join(output_directory, 'metadata')
@@ -292,21 +298,26 @@ def train(input_directory, output_directory, log_directory, checkpoint_path, war
 
     train_loader, valset, collate_fn, train_sampler = prepare_dataloaders(meta_folder, hparams)
 
-    path = os.path.join(meta_folder, "speakers.json")
-    obj = dict(valset.speaker_ids)
-    json_dump(obj, path)
-    yaml.dump(obj, open(os.path.join(meta_folder, "speakers.yml"), 'wt', encoding='utf8'))
+    stem_path = os.path.join(meta_folder, "locals")
+    obj = {k: (str(v) if isinstance(v, Path) else v)
+           for k, v in locals().items() if isinstance(v, (int, float, str, Path, bool))}
+    json_dump(obj, f'{stem_path}.json')
+    yaml_dump(obj, f'{stem_path}.yml')
 
-    path = os.path.join(meta_folder, "hparams.json")
+    stem_path = os.path.join(meta_folder, "speakers")
+    obj = {k: v for k, v in valset.speaker_ids.items()}
+    json_dump(obj, f'{stem_path}.json')
+    yaml_dump(obj, f'{stem_path}.yml')
+
+    stem_path = os.path.join(meta_folder, "hparams")
     obj = {k: v for k, v in hparams.items()}
-    json_dump(obj, path)
-    yaml.dump(obj, open(os.path.join(meta_folder, "hparams.yml"), 'wt', encoding='utf8'))
+    json_dump(obj, f'{stem_path}.json')
+    yaml_dump(obj, f'{stem_path}.yml')
 
-    path = os.path.join(meta_folder, "symbols.json")
-    from .text.symbols import symbols
+    stem_path = os.path.join(meta_folder, "symbols")
     obj = {w: i for i, w in enumerate(symbols)}
-    json_dump(obj, path)
-    yaml.dump(obj, open(os.path.join(meta_folder, "symbols.yml"), 'wt', encoding='utf8'))
+    json_dump(obj, f'{stem_path}.json')
+    yaml_dump(obj, f'{stem_path}.yml')
 
     # Load checkpoint if one exists
     iteration = 0

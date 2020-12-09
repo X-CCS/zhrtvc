@@ -339,7 +339,7 @@ def singing_voice_v2():
     # write("audio_stereo.wav", hparams.sampling_rate, audio_stereo)
     # ipd.Audio([audio_stereo[:, 0], audio_stereo[:, 1]], rate=hparams.sampling_rate)
 
-def gf():
+def griffinlim():
     # magnitudes = magnitudes.data
     # mel_output = torch.matmul(self.mel_basis, magnitudes)
     # mel_output = self.spectral_normalize(mel_output)
@@ -355,6 +355,24 @@ def gf():
     magnitudes = torch.unsqueeze(magnitudes, 0)
     wav_output = griffin_lim(magnitudes, stft_fn=valset.stft.stft_fn, n_iters=30)
 
+
+def waveglow():
+    waveglow_model = torch.load(r'../models/waveglow/waveglow_v5_model.pt', map_location='cpu')
+
+    def waveglow_vocoder(mels):
+        with torch.no_grad():
+            wavs = waveglow_model.infer(mels, sigma=1.0)
+        return wavs
+
+
+    from mellotron.inference import transform_mel
+
+    audio_ref, sr_ref = aukit.load_wav(audio, sr=None, with_sr=True)
+    mel = transform_mel(audio_ref, stft=msyner.stft)
+    spec_ref = mel
+
+    wav_inputs = waveglow_vocoder(torch.from_numpy(spec_ref[None]))
+    wav_ref = wav_inputs[0].cpu().numpy()
 
 if __name__ == "__main__":
     print(__file__)

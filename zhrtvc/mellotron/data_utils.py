@@ -23,9 +23,6 @@ from mellotron.utils import load_wav_to_torch, load_filepaths_and_text, load_fil
 from mellotron.text import text_to_sequence, cmudict
 from mellotron.yin import compute_yin
 
-from mellotron.utils import melspectrogram_torch, linearspectrogram_torch
-from mellotron.utils import linearspectrogram
-
 
 def transform_embed(wav, encoder_model_fpath=Path()):
     from encoder import inference as encoder
@@ -41,8 +38,11 @@ def transform_text(text, text_cleaners):
     return text_to_sequence(text, text_cleaners)
 
 
-def transform_mel(wav, hparams):
-    return linearspectrogram(wav, hparams)
+def transform_mel(wav, stft=None):
+    audio_norm = torch.FloatTensor(wav[None].astype(np.float32))
+    melspec = stft.mel_spectrogram(audio_norm)
+    melspec = torch.squeeze(melspec, 0)
+    return melspec.cpu().numpy()
 
 
 def transform_speaker(speaker, speaker_ids=None):
@@ -132,6 +132,9 @@ def transform_data_train(hparams, text_data, mel_data, speaker_data, f0_data, em
         f0 = np.tile(embed, (mel.shape[1], 1)).T
         speaker = speaker * 0
     elif mode == 'gst':
+        f0 = None
+        speaker = speaker * 0
+    elif mode == 'tacotron':
         f0 = None
         speaker = speaker * 0
     else:
