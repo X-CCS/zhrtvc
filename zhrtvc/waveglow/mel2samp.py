@@ -32,6 +32,7 @@ import torch
 import torch.utils.data
 import sys
 from scipy.io.wavfile import read
+import librosa
 
 # We're using the audio processing from TacoTron2 to make sure it matches
 sys.path.insert(0, 'tacotron2')
@@ -39,21 +40,32 @@ from mellotron.layers import TacotronSTFT
 
 MAX_WAV_VALUE = 32768.0
 
+
 def files_to_list(filename):
     """
     Takes a text file of filenames and makes a list of filenames
     """
     with open(filename, encoding='utf-8') as f:
-        files = f.readlines()
+        files_ = f.readlines()
 
-    files = [f.rstrip() for f in files]
+    # files = [f.rstrip() for f in files_]
+    dirpath = os.path.dirname(filename)
+    files = []
+    for line in files_:
+        filepath = os.path.join(dirpath, line.split('\t')[0])
+        if os.path.isfile(filepath):
+            files.append(filepath)
     return files
+
 
 def load_wav_to_torch(full_path):
     """
     Loads wavdata into torch array
     """
-    sampling_rate, data = read(full_path)
+    data, sampling_rate = librosa.load(full_path, sr=None)
+    # sampling_rate, data = read(full_path)
+    if (max(data) >= 1) or (min(data) <= -1):
+        print(max(data), min(data))
     return torch.from_numpy(data).float(), sampling_rate
 
 
@@ -62,6 +74,7 @@ class Mel2Samp(torch.utils.data.Dataset):
     This is the main class that calculates the spectrogram and returns the
     spectrogram, audio pair.
     """
+
     def __init__(self, training_files, segment_length, filter_length,
                  hop_length, win_length, sampling_rate, mel_fmin, mel_fmax):
         if os.path.isfile(str(training_files)):
@@ -79,7 +92,7 @@ class Mel2Samp(torch.utils.data.Dataset):
         self.sampling_rate = sampling_rate
 
     def get_mel(self, audio):
-        audio_norm = audio / MAX_WAV_VALUE
+        audio_norm = audio  # audio / MAX_WAV_VALUE
         audio_norm = audio_norm.unsqueeze(0)
         audio_norm = torch.autograd.Variable(audio_norm, requires_grad=False)
         melspec = self.stft.mel_spectrogram(audio_norm)
@@ -98,17 +111,18 @@ class Mel2Samp(torch.utils.data.Dataset):
         if audio.size(0) >= self.segment_length:
             max_audio_start = audio.size(0) - self.segment_length
             audio_start = random.randint(0, max_audio_start)
-            audio = audio[audio_start:audio_start+self.segment_length]
+            audio = audio[audio_start:audio_start + self.segment_length]
         else:
             audio = torch.nn.functional.pad(audio, (0, self.segment_length - audio.size(0)), 'constant').data
 
         mel = self.get_mel(audio)
-        audio = audio / MAX_WAV_VALUE
+        # audio = audio / MAX_WAV_VALUE
 
         return (mel, audio)
 
     def __len__(self):
         return len(self.audio_files)
+
 
 # ===================================================================
 # Takes directory of clean audio and makes directory of spectrograms

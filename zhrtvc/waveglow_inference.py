@@ -23,6 +23,7 @@ def parse_args():
     parser.add_argument('-o', "--output_path", default='../results/waveglow', type=str)
     parser.add_argument("-c", "--config_path", default='waveglow/config.json', type=str)
     parser.add_argument("--cuda", type=str, default='0', help='Set CUDA_VISIBLE_DEVICES')
+    parser.add_argument("--save_model_path", type=str, default='', help='Save model for torch load')
     args = parser.parse_args()
     return args
 
@@ -41,16 +42,16 @@ from tqdm import tqdm
 
 from mellotron.layers import TacotronSTFT
 from waveglow.mel2samp import MAX_WAV_VALUE, Mel2Samp, load_wav_to_torch
-import waveglow.inference as waveglow
 
 
-# 要import一下waveglow，否则导致glow缺失报错。
+# 要把glow所在目录包含进来，否则导致glow缺失报错。
 
-def main(input_path, waveglow_path, config_path, output_path):
+def main(input_path, waveglow_path, config_path, output_path, save_model_path):
     waveglow = torch.load(waveglow_path)['model']
     waveglow = waveglow.remove_weightnorm(waveglow)
     waveglow.cuda().eval()
-    # torch.save(waveglow, '../waveglow_v5_model.pt')
+    if save_model_path:
+        torch.save(waveglow, save_model_path)
     # waveglow = torch.load('../waveglow_v5_model.pt', map_location='cuda')
     with open(config_path) as f:
         data = f.read()
@@ -104,4 +105,5 @@ if __name__ == "__main__":
     main(input_path=args.input_path,
          waveglow_path=args.waveglow_path,
          output_path=args.output_path,
-         config_path=args.config_path)
+         config_path=args.config_path,
+         save_model_path=args.save_model_path)
