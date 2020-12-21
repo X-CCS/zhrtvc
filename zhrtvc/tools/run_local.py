@@ -114,6 +114,13 @@ def biaobei2aishell3():
             fout.write(out_line)
 
 
+def speaker_embedding():
+    import hashlib
+    out_32 = hashlib.md5('abc'.encode('utf8')).hexdigest()
+    out = np.array([int(w, 16) + 1 for w in out_32]) / 16
+    print(out)
+
+
 if __name__ == "__main__":
     print(__file__)
     indir = Path(r"E:\lab\melgan\data\aliexamples")
@@ -121,11 +128,12 @@ if __name__ == "__main__":
     # outdir.mkdir(exist_ok=True)
     # wavs2mels(indir=indir, outdir=outdir)
 
-    indir = Path(r"E:\data\aliaudio\alijuzi")
-    # get_train_files(indir=indir)
-
-    line = '000085	现在是#2道儿#2越走#1越宽#3，人气#2越搞#1越旺#4。	xian4 zai4 shi4 daor4 yue4 zou3 yue4 kuan1 ren2 qi4 yue4 gao3 yue4 wang4'
-    out = convert_line(line)
-    print(out)
-
-    biaobei2aishell3()
+    # indir = Path(r"E:\data\aliaudio\alijuzi")
+    # # get_train_files(indir=indir)
+    #
+    # line = '000085	现在是#2道儿#2越走#1越宽#3，人气#2越搞#1越旺#4。	xian4 zai4 shi4 daor4 yue4 zou3 yue4 kuan1 ren2 qi4 yue4 gao3 yue4 wang4'
+    # out = convert_line(line)
+    # print(out)
+    #
+    # biaobei2aishell3()
+    speaker_embedding()

@@ -15,6 +15,7 @@ import numpy as np
 import torch
 import torch.utils.data
 import librosa
+import hashlib
 import traceback
 from pathlib import Path
 
@@ -46,8 +47,12 @@ def transform_mel(wav, stft=None):
 
 
 def transform_speaker(speaker, speaker_ids=None):
-    speaker_ids = speaker_ids or {}
-    return np.array([speaker_ids.get(speaker, 0)])
+    # speaker_ids = speaker_ids or {}
+    # return np.array([speaker_ids.get(speaker, 0)])
+    # 一个说话人名字对应唯一的一个说话人向量
+    hex_idx = hashlib.md5(speaker.encode('utf8')).hexdigest()
+    out = (np.array([int(w, 16) for w in hex_idx])[None] - 7) / 10  # -0.7~0.8
+    return out
 
 
 def transform_f0(wav, hparams):
@@ -137,6 +142,9 @@ def transform_data_train(hparams, text_data, mel_data, speaker_data, f0_data, em
     elif mode == 'tacotron':
         f0 = None
         speaker = speaker * 0
+    elif mode == 'mspk':
+        # 发音人用md5的数字生成的向量表示，不用f0。
+        f0 = None
     else:
         # 默认：不用f0。
         f0 = None
@@ -261,10 +269,16 @@ class TextMelLoader(torch.utils.data.Dataset):
         return (text, mel, speaker_id, f0)
 
     def get_speaker_id(self, speaker_id):
-        return torch.IntTensor([self.speaker_ids[speaker_id]])
+        if self.hparams.n_speakers == 0:
+            # 一个说话人名字对应唯一的一个说话人向量
+            hex_idx = hashlib.md5(speaker_id.encode('utf8')).hexdigest()
+            out = (np.array([int(w, 16) for w in hex_idx])[None] - 7) / 10
+            return torch.FloatTensor(out)
+        else:
+            return torch.IntTensor([self.speaker_ids[speaker_id]])
 
     def get_mel_and_f0(self, filepath):
-        audio, sampling_rate = load_wav_to_torch(filepath)
+        audio, sampling_rate = load_wav_to_torch(filepath, sr_force=self.stft.sampling_rate)
         audio_norm = audio / self.max_wav_value
         if sampling_rate != self.stft.sampling_rate:
             raise ValueError("{} SR doesn't match target {} SR".format(
@@ -358,6 +372,10 @@ class TextMelCollate():
             num_f0s = batch[0][3].size(0)  # 获取f0s的维度。
         except:
             num_f0s = 1
+        try:
+            num_speaker_ids = batch[0][2].size(1)  # 获取num_speaker_ids的维度。
+        except:
+            num_speaker_ids = 0
 
         # include mel padded, gate padded and speaker ids
         mel_padded = torch.FloatTensor(len(batch), num_mels, max_target_len)
@@ -365,7 +383,12 @@ class TextMelCollate():
         gate_padded = torch.FloatTensor(len(batch), max_target_len)
         gate_padded.zero_()
         output_lengths = torch.LongTensor(len(batch))
-        speaker_ids = torch.LongTensor(len(batch))
+
+        if num_speaker_ids == 0:
+            speaker_ids = torch.LongTensor(len(batch))
+        else:
+            speaker_ids = torch.FloatTensor(len(batch), num_speaker_ids)
+
         f0_padded = torch.FloatTensor(len(batch), num_f0s, max_target_len)
         f0_padded.zero_()
 
@@ -383,5 +406,4 @@ class TextMelCollate():
 
         model_inputs = (text_padded, input_lengths, mel_padded, gate_padded,
                         output_lengths, speaker_ids, f0_padded)
-
         return model_inputs

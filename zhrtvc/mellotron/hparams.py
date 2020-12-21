@@ -26,7 +26,7 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         ################################
         # Data Parameters             #
         ################################
-        train_mode='train-tacotron',
+        train_mode='train-mspk',
         # f01:用基频，prenet_f0_dim=1。
         # f02:用基频均值填充，prenet_f0_dim=1。
         # f03:用零向量代替基频，prenet_f0_dim=1。
@@ -35,6 +35,7 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         # f06s02:用语音的embed向量代替，基频speaker_id用0表示，prenet_f0_dim=8。
         # gst:用gst模式，把speaker_id用0表示，prenet_f0_dim=0, token_embedding_size=64 * level, with_gst=True。
         # tacotron:用tacotron模式，把speaker_id用0表示，prenet_f0_dim=0, token_embedding_size=0, with_gst=False。
+        # mspk:multispeaker，快捷表示说话人，用speaker的md5的32位16进制数代表说话人，不用基频，speaker_embedding_dim=32, n_speakers=0, prenet_f0_dim=0。
 
         # training_files=r"../../data/SV2TTS/mellotron/samples_ssml/train.txt",
         # 文件一行记录一个语音信息，每行的数据结构：数据文件夹名\t语音源文件\t文本\t说话人名称\n，样例如下：
@@ -100,8 +101,8 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         postnet_n_convolutions=5,
 
         # Speaker embedding
-        n_speakers=1000,  # 123
-        speaker_embedding_dim=16 * level,  # 32 * level,  # 128,
+        n_speakers=0, #1000,  # 123
+        speaker_embedding_dim=32,#16 * level,  # 32 * level,  # 128,
 
         # Reference encoder
         with_gst=False,  # True,

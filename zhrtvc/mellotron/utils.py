@@ -67,10 +67,12 @@ def inv_linearspectrogram(spec):
 _device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
-def read(fpath):
-    wav, sr = librosa.load(fpath, sr=22050)
+def read(fpath, sr_force=None):
+    wav, sr = librosa.load(fpath, sr=None)
+    if (sr_force is not None) and (sr != sr_force):
+        wav = librosa.resample(wav, orig_sr=sr, target_sr=sr_force)
     out = np.clip(wav, -1, 1) * (2 ** 15 - 1)
-    return sr, out.astype(int)
+    return (sr_force or sr), out.astype(int)
 
 
 def get_mask_from_lengths(lengths):
@@ -80,8 +82,8 @@ def get_mask_from_lengths(lengths):
     return mask
 
 
-def load_wav_to_torch(full_path):
-    sampling_rate, data = read(full_path)
+def load_wav_to_torch(full_path, sr_force=None):
+    sampling_rate, data = read(full_path, sr_force=sr_force)
     return torch.FloatTensor(data.astype(np.float32)), sampling_rate
 
 
