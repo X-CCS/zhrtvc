@@ -68,7 +68,8 @@ class Tacotron2Logger(SummaryWriter):
             iteration, sample_rate=self.stft.sampling_rate
         )
 
-        spk = int(speaker_ids[idx].data.cpu().numpy().flatten()[0])
+        # spk = int(speaker_ids[idx].data.cpu().numpy().flatten()[0])
+        spk = ' '.join([f'{w:.2f}' for w in speaker_ids[idx].data.cpu().numpy().flatten()])  # speaker_ids可能是向量
         ph_ids = text_inputs[idx].data.cpu().numpy().flatten()
         phs_text = sequence_to_text(ph_ids)
         phs_size = len(ph_ids)
@@ -78,7 +79,7 @@ class Tacotron2Logger(SummaryWriter):
         spect_shape = mel_targets[idx].data.cpu().numpy().shape
         specp_shape = mel_outputs[idx].data.cpu().numpy().shape
         align_shape = alignments[idx].data.cpu().numpy().T.shape
-        out_text = dict(speaker_id=spk, phonemes=phs_text, phonemes_size=phs_size, validation_loss=reduced_loss,
+        out_text = dict(speaker=spk, phonemes=phs_text, phonemes_size=phs_size, validation_loss=reduced_loss,
                         audio_target_ms=audt_duration, audio_predicted_ms=audp_duration,
                         spectrogram_target_shape=str(spect_shape), spectrogram_predicted_shape=str(specp_shape),
                         alignment_shape=str(align_shape))
