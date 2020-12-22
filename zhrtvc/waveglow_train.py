@@ -11,8 +11,28 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(Path(__name__).stem)
 
-import json
 import argparse
+import os
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config', type=str, default='waveglow/config.json',
+                        help='JSON file for configuration')
+    parser.add_argument('-r', '--rank', type=int, default=0,
+                        help='rank of process for distributed')
+    parser.add_argument('-g', '--group_name', type=str, default='',
+                        help='name of group for distributed')
+    parser.add_argument("--cuda", type=str, default='0', help='Set CUDA_VISIBLE_DEVICES')
+    args = parser.parse_args()
+    return args
+
+
+args = parse_args()
+
+os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda
+
+import json
 import torch
 from waveglow.train import train
 
@@ -23,15 +43,6 @@ if __name__ == "__main__":
         setproctitle('zhrtvc-waveglow-train')
     except ImportError:
         pass
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', type=str, default='waveglow/config.json',
-                        help='JSON file for configuration')
-    parser.add_argument('-r', '--rank', type=int, default=0,
-                        help='rank of process for distributed')
-    parser.add_argument('-g', '--group_name', type=str, default='',
-                        help='name of group for distributed')
-    args = parser.parse_args()
 
     # Parse configs.  Globals nicer in this case
     with open(args.config) as f:

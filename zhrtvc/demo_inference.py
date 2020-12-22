@@ -15,6 +15,7 @@ from pathlib import Path
 import logging
 import argparse
 import os
+import hashlib
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(Path(__name__).stem)
@@ -22,7 +23,7 @@ logger = logging.getLogger(Path(__name__).stem)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='声音编码器、语音合成器和声码器推理')
-    parser.add_argument('--mellotron_path', type=str, default='../models/mellotron/mellotron_samples_model.pt',
+    parser.add_argument('--mellotron_path', type=str, default=r"../models/mellotron/samples/mellotron-samples-000000.pt",  #'../models/mellotron/mellotron_samples_model.pt'
                         help='Mellotron model file path')
     parser.add_argument('--melgan_path', type=str, default='', help='MelGAN model file path')
     parser.add_argument('--waveglow_path', type=str, default='../models/waveglow/waveglow_v5_model.pt',
@@ -132,7 +133,11 @@ def transform_mellotron_input_data(text, style='', speaker='', f0='', device='')
         device = _device
     text_data = torch.LongTensor(phkit.chinese_text_to_sequence(text, cleaner_names='hanzi'))[None, :].to(device)
     style_data = 0
-    speaker_data = torch.zeros([1], dtype=torch.long).to(device)
+
+    hex_idx = hashlib.md5(speaker.encode('utf8')).hexdigest()
+    out = (np.array([int(w, 16) for w in hex_idx])[None] - 7) / 10  # -0.7~0.8
+    speaker_data = torch.FloatTensor(out).to(device)
+    # speaker_data = torch.zeros([1], dtype=torch.long).to(device)
     f0_data = None
     return text_data, style_data, speaker_data, f0_data
 

@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument("-e", "--encoder_model_fpath", type=Path,
                         default=r"../models/encoder/saved_models/ge2e_pretrained.pt",
                         help="Path your trained encoder model.")
-    parser.add_argument("--save_model_path", type=str, default='',
+    parser.add_argument("--save_model_path", type=str, default=r"../models/mellotron/samples/mellotron-samples-000000.pt",
                         help='保存模型为可以直接torch.load的格式')
     parser.add_argument("--cuda", type=str, default='-1',
                         help='设置CUDA_VISIBLE_DEVICES')

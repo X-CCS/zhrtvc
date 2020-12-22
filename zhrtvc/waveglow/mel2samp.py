@@ -24,6 +24,12 @@
 #  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # *****************************************************************************\
+from pathlib import Path
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(Path(__name__).stem)
+
 import os
 import random
 import argparse
@@ -33,6 +39,8 @@ import torch.utils.data
 import sys
 from scipy.io.wavfile import read
 import librosa
+import numpy as np
+import traceback
 
 # We're using the audio processing from TacoTron2 to make sure it matches
 sys.path.insert(0, 'tacotron2')
@@ -58,15 +66,17 @@ def files_to_list(filename):
     return files
 
 
-def load_wav_to_torch(full_path):
+def load_wav_to_torch(full_path, sr_force=None):
     """
     Loads wavdata into torch array
     """
     data, sampling_rate = librosa.load(full_path, sr=None)
+    if (sr_force is not None) and (sampling_rate != sr_force):
+        librosa.resample(data, orig_sr=sampling_rate, target_sr=sr_force)
     # sampling_rate, data = read(full_path)
-    if (max(data) >= 1) or (min(data) <= -1):
+    if (max(data) > 1) or (min(data) < -1):
         print(max(data), min(data))
-    return torch.from_numpy(data).float(), sampling_rate
+    return torch.from_numpy(data).float(), (sr_force or sampling_rate)
 
 
 class Mel2Samp(torch.utils.data.Dataset):
@@ -79,8 +89,10 @@ class Mel2Samp(torch.utils.data.Dataset):
                  hop_length, win_length, sampling_rate, mel_fmin, mel_fmax):
         if os.path.isfile(str(training_files)):
             self.audio_files = files_to_list(training_files)
+            self.ids = list(range(len(self.audio_files)))
         else:
             self.audio_files = []
+            self.ids = []
         random.seed(1234)
         random.shuffle(self.audio_files)
         self.stft = TacotronSTFT(filter_length=filter_length,
@@ -99,10 +111,10 @@ class Mel2Samp(torch.utils.data.Dataset):
         melspec = torch.squeeze(melspec, 0)
         return melspec
 
-    def __getitem__(self, index):
+    def get_item(self, index):
         # Read audio
         filename = self.audio_files[index]
-        audio, sampling_rate = load_wav_to_torch(filename)
+        audio, sampling_rate = load_wav_to_torch(filename, sr_force=self.sampling_rate)
         if sampling_rate != self.sampling_rate:
             raise ValueError("{} SR doesn't match target {} SR".format(
                 sampling_rate, self.sampling_rate))
@@ -119,6 +131,17 @@ class Mel2Samp(torch.utils.data.Dataset):
         # audio = audio / MAX_WAV_VALUE
 
         return (mel, audio)
+
+    def __getitem__(self, index):
+        tmp = index
+        while True:
+            try:  # 模型训练模式容错。
+                out = self.get_item(tmp)
+                return out
+            except:
+                logger.info('The index <{}> loaded failed!'.format(index, tmp))
+                traceback.print_exc()
+                tmp = np.random.choice(self.ids)
 
     def __len__(self):
         return len(self.audio_files)

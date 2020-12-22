@@ -47,12 +47,15 @@ def transform_mel(wav, stft=None):
 
 
 def transform_speaker(speaker, speaker_ids=None):
-    # speaker_ids = speaker_ids or {}
-    # return np.array([speaker_ids.get(speaker, 0)])
-    # 一个说话人名字对应唯一的一个说话人向量
-    hex_idx = hashlib.md5(speaker.encode('utf8')).hexdigest()
-    out = (np.array([int(w, 16) for w in hex_idx])[None] - 7) / 10  # -0.7~0.8
-    return out
+    if speaker_ids is None:
+        # 一个说话人名字对应唯一的一个说话人向量
+        hex_idx = hashlib.md5(speaker.encode('utf8')).hexdigest()
+        out = (np.array([int(w, 16) for w in hex_idx])[None] - 7) / 10  # -0.7~0.8
+        return out
+    else:
+        speaker_ids = speaker_ids or {}
+        out = np.array([speaker_ids.get(speaker, 0)])
+        return out
 
 
 def transform_f0(wav, hparams):

@@ -40,7 +40,7 @@ import torch
 import librosa
 from tqdm import tqdm
 
-from mellotron.layers import TacotronSTFT
+# from mellotron.layers import TacotronSTFT
 from waveglow.mel2samp import MAX_WAV_VALUE, Mel2Samp, load_wav_to_torch
 
 

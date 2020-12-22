@@ -333,6 +333,9 @@ def train(input_directory, output_directory, log_directory, checkpoint_path, war
                 learning_rate = _learning_rate
             iteration += 1  # next iteration is iteration + 1
             epoch_offset = max(0, int(iteration / len(train_loader)))
+
+    iteration_start = iteration
+
     checkpoint_folder = os.path.join(output_directory, 'checkpoint')
     os.makedirs(checkpoint_folder, exist_ok=True)
 
@@ -381,7 +384,7 @@ def train(input_directory, output_directory, log_directory, checkpoint_path, war
                 logger.log_training(
                     reduced_loss, grad_norm, learning_rate, duration, iteration)
 
-            if not is_overflow and (iteration % hparams.iters_per_checkpoint == 0):
+            if not is_overflow and ((iteration % hparams.iters_per_checkpoint == 0) or (iteration == iteration_start)):
                 print("Train loss {} {:.6f} Grad Norm {:.6f} {:.2f}s/it".format(
                     iteration, reduced_loss, grad_norm, duration))
                 validate(model, criterion, valset, iteration,

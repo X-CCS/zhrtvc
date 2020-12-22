@@ -142,7 +142,7 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
     if checkpoint_path != "":
         model, optimizer, iteration = load_checkpoint(checkpoint_path, model, optimizer)
         iteration += 1  # next iteration is iteration + 1
-
+    iteration_start = iteration
     trainset = Mel2Samp(**data_config)
     # =====START: ADDED FOR DISTRIBUTED======
     train_sampler = DistributedSampler(trainset) if num_gpus > 1 else None
@@ -197,7 +197,7 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
             if with_tensorboard and rank == 0:
                 logger.add_scalar('training_loss', reduced_loss, i + len(train_loader) * epoch)
 
-            if (iteration % iters_per_checkpoint == 0):
+            if (iteration % iters_per_checkpoint == 0) or (iteration == iteration_start):
                 if rank == 0:
                     checkpoint_path = "{}/waveglow-{:06d}.pt".format(output_directory, iteration)
                     save_checkpoint(model, optimizer, learning_rate, iteration,

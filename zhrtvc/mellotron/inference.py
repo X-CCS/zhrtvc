@@ -96,20 +96,26 @@ class MellotronSynthesizer():
 
     def synthesize(self, text, speaker, audio, with_show=False):
         text_encoded = torch.LongTensor(transform_text(text, text_cleaners='hanzi'))[None, :].to(self.device)
-        speaker_id = torch.LongTensor(transform_speaker(speaker, speaker_ids=self.speakers)).to(self.device)
-        if isinstance(audio, (Path, str)):
+        if self.hparams.n_speakers == 0:
+            speaker_id = torch.FloatTensor(transform_speaker(speaker, speaker_ids=None)).to(self.device)
+        else:
+            speaker_id = torch.LongTensor(transform_speaker(speaker, speaker_ids=self.speakers)).to(self.device)
+        if isinstance(audio, (Path, str)) and Path(audio).is_file():
             audio = librosa.load(audio, sr=None)[0]
-        style_input = torch.FloatTensor(transform_mel(audio, stft=self.stft))[None, :].to(self.device)
-        # style_input = 0
+            style_input = torch.FloatTensor(transform_mel(audio, stft=self.stft))[None, :].to(self.device)
+        else:
+            style_input = 0
         pitch_contour = None
+
         with torch.no_grad():
             mel_outputs, mel_outputs_postnet, gate_outputs, alignments = self.model.inference(
                 (text_encoded, style_input, speaker_id, pitch_contour))
+
         out_mel = mel_outputs_postnet.data.cpu().numpy()[0]
         out_align = alignments.data.cpu().numpy()[0]
         out_gate = torch.sigmoid(gate_outputs.data).cpu().numpy()[0]
 
-        end_idx = np.argmax(out_gate > 0.1) or out_gate.shape[0]
+        end_idx = np.argmax(out_gate > 0.2) or out_gate.shape[0]
 
         out_mel = out_mel[:, :end_idx]
         out_align = out_align.T[:, :end_idx]

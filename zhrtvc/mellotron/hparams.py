@@ -101,8 +101,8 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         postnet_n_convolutions=5,
 
         # Speaker embedding
-        n_speakers=0, #1000,  # 123
-        speaker_embedding_dim=32,#16 * level,  # 32 * level,  # 128,
+        n_speakers=0,  # 1000,  # 123
+        speaker_embedding_dim=32,  # 16 * level,  # 32 * level,  # 128,
 
         # Reference encoder
         with_gst=False,  # True,
