@@ -15,7 +15,7 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--encoder_model_fpath", type=Path,
                         default=r"../models/encoder/saved_models/ge2e_pretrained.pt", help= \
                             "Path your trained encoder model.")
-    parser.add_argument("-n", "--n_processes", type=int, default=4, help= \
+    parser.add_argument("-n", "--n_processes", type=int, default=0, help= \
         "Number of parallel processes. An encoder is created for each, so you may need to lower "
         "this value on GPUs with low memory. Set it to 1 if CUDA is unhappy.")
     parser.add_argument("--hparams", type=str, default="", help= \

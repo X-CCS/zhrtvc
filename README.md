@@ -9,11 +9,15 @@ tips: 中文或汉语的语言缩写简称是**zh**。
 
 ### 版本
 
-v1.2.1
+v1.3.2
 
 使用说明和注意事项详见[readme](zhrtvc/README.md)
 
-tips: 需要进入zhrtvc项目的代码子目录【[zhrtvc](zhrtvc)】运行代码。
++ **tips**: 
+
+需要进入zhrtvc项目的代码子目录【[zhrtvc](zhrtvc)】运行代码。
+
+zhrtvc项目默认参数设置是适用于样本数据samples的，仅用于跑通整个流程。
 
 + **原始语音和克隆语音对比样例**
 
@@ -56,22 +60,22 @@ name: ge2e_pretrained_iwater.pt
 
 + **toolbox**
 
-![toolbox](files/toolbox.png "toolbox")
+![toolbox](data/files/toolbox.png "toolbox")
 
 
 + **合成样例**
 
-[aliaudio-Aibao-004113.wav](files/aliaudio-Aibao-004113.wav)
+[aliaudio-Aibao-004113.wav](data/files/aliaudio-Aibao-004113.wav)
 
-[aliaudio-Aimei-007261.wav](files/aliaudio-Aimei-007261.wav)
+[aliaudio-Aimei-007261.wav](data/files/aliaudio-Aimei-007261.wav)
 
-[aliaudio-Aina-000819.wav](files/aliaudio-Aina-000819.wav)
+[aliaudio-Aina-000819.wav](data/files/aliaudio-Aina-000819.wav)
 
-[aliaudio-Aiqi-009619.wav](files/aliaudio-Aiqi-009619.wav)
+[aliaudio-Aiqi-009619.wav](data/files/aliaudio-Aiqi-009619.wav)
 
-[aliaudio-Aitong-003149.wav](files/aliaudio-Aitong-003149.wav)
+[aliaudio-Aitong-003149.wav](data/files/aliaudio-Aitong-003149.wav)
 
-[aliaudio-Aiwei-009461.wav](files/aliaudio-Aiwei-009461.wav)
+[aliaudio-Aiwei-009461.wav](data/files/aliaudio-Aiwei-009461.wav)
 
 
 + **注意**

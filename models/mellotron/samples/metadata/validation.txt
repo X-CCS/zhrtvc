@@ -1,0 +1,8 @@
+E:/github-kuangdd/zhrtvc/data/samples/wav/000003.wav	宝马配挂跛骡鞍，貂蝉怨枕董翁榻。	biaobei
+E:/github-kuangdd/zhrtvc/data/samples/wav/000004.wav	邓小平与撒切尔会晤。	biaobei
+E:/github-kuangdd/zhrtvc/data/samples/wav/000005.wav	老虎幼崽与宠物犬玩耍。	biaobei
+E:/github-kuangdd/zhrtvc/data/samples/wav/000006.wav	身长约五尺二寸五分或以上。	biaobei
+E:/github-kuangdd/zhrtvc/data/samples/wav/000013.wav	翁凯兰防乳腺癌宣传照。	biaobei
+E:/github-kuangdd/zhrtvc/data/samples/wav/000017.wav	右蛮舞袅袅，左琼歌昔昔。	biaobei
+E:/github-kuangdd/zhrtvc/data/samples/wav/000018.wav	眼眶宽阔而低矮，鼻短而宽。	biaobei
+E:/github-kuangdd/zhrtvc/data/samples/wav/000019.wav	霞浦县牙城镇乌岐、瓦窑村水位猛涨。	biaobei

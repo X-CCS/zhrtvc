@@ -26,7 +26,7 @@ from utils.texthelper import xinqing_texts
 
 example_texts = xinqing_texts
 
-sample_dir = Path(r"../files")
+sample_dir = Path(r"../data/files")
 reference_paths = [w for w in sorted(sample_dir.glob('*.wav'))]
 
 if __name__ == '__main__':

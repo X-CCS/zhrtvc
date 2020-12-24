@@ -54,7 +54,8 @@ class Toolbox:
         if metapath.is_file():
             itdt = {}
             for line in open(metapath, encoding="utf8"):
-                idx, text = line.strip().split("\t")
+                parts = line.strip().split("\t")
+                idx, text = parts[0], parts[1]
                 itdt[idx] = text
             self.itdt = itdt
         else:

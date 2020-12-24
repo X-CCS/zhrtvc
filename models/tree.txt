@@ -1,25 +1,92 @@
-models
-|---encoder
-|  |---saved_models
-|---synthesizer
-|  |---saved_models
-|      |---logs-syne
-|          |---checkpoints
-|          |---evals
-|          |  |---plots
-|          |  |---wavs
-|          |---events
-|          |---metas
-|          |---plots
-|          |---spectrograms
-|          |---wavs
-|---toolbox
-|  |---saved_files
-|      |---embeds
-|      |---mels
-|      |---records
-|      |---wavs
-|---vocoder
-    |---saved_models
-        |---melgan
-        |---wavernn
+Folder PATH listing for volume 新加卷
+Volume serial number is 8AA1-F5E4
+E:.
+│   tree.txt
+│   
+├───encoder
+│   └───saved_models
+├───melgan
+│   └───samples
+│       ├───events
+│       │       events.out.tfevents.tensorboard
+│       │       
+│       ├───generated
+│       │       generated_step10_0.wav
+│       │       generated_step10_1.wav
+│       │       generated_step10_2.wav
+│       │       generated_step10_3.wav
+│       │       
+│       ├───metadata
+│       │       args.json
+│       │       args.yml
+│       │       train.yml
+│       │       
+│       ├───models
+│       └───original
+│               original_test_0.wav
+│               original_test_1.wav
+│               original_test_2.wav
+│               original_test_3.wav
+│               
+├───mellotron
+│   └───samples
+│       ├───checkpoint
+│       ├───metadata
+│       │       args.json
+│       │       args.yml
+│       │       hparams.json
+│       │       hparams.yml
+│       │       locals.json
+│       │       locals.yml
+│       │       speakers.json
+│       │       speakers.yml
+│       │       symbols.json
+│       │       symbols.yml
+│       │       train.txt
+│       │       validation.txt
+│       │       
+│       ├───tensorboard
+│       │       events.out.tfevents.tensorboard
+│       │       
+│       └───validation
+│           └───000000-50.5758
+│                   figure.png
+│                   griffinlim_pred.wav
+│                   griffinlim_true.wav
+│                   
+├───synthesizer
+│   └───saved_models
+│       └───logs-synz
+│           │   synthesizer_train.log
+│           │   
+│           ├───checkpoints
+│           ├───evals
+│           │   ├───plots
+│           │   └───wavs
+│           ├───events
+│           │       events.out.tfevents.tensorboard
+│           │       
+│           ├───metas
+│           │       args.json
+│           │       CharacterEmbeddings.tsv
+│           │       hparams.json
+│           │       symbols.json
+│           │       
+│           ├───plots
+│           ├───spectrograms
+│           └───wavs
+├───toolbox
+│   └───saved_files
+│       ├───embeds
+│       ├───mels
+│       ├───records
+│       └───wavs
+├───vocoder
+└───waveglow
+    └───samples
+        └───checkpoint
+            │   info.yml
+            │   
+            └───logs
+                    events.out.tfevents.tensorboard
+                    

@@ -28,8 +28,7 @@ def preprocess_librispeech(datasets_root: Path, out_dir: Path, n_processes: int,
 
     # Preprocess the dataset
     speaker_dirs = list(chain.from_iterable(input_dir.glob("*") for input_dir in input_dirs))
-    func = partial(preprocess_speaker, out_dir=out_dir, skip_existing=skip_existing,
-                   hparams=hparams)
+    func = partial(preprocess_speaker, out_dir=out_dir, skip_existing=skip_existing, hparams=hparams)
     job = Pool(n_processes).imap(func, speaker_dirs)
     for speaker_metadata in tqdm(job, dataset_root.stem, len(speaker_dirs), unit="speakers"):
         for metadatum in speaker_metadata:
@@ -126,7 +125,7 @@ def preprocess_speaker_user(speaker_dir, out_dir: Path, skip_existing: bool, hpa
 
 
 def preprocess_utterance_user(line, speaker_dir, out_dir: Path, skip_existing: bool, hparams):
-    fname, text = line
+    fname, text = line[0], line[1]
     wav_fpath = speaker_dir.joinpath(fname)
     try:
         assert wav_fpath.exists()
@@ -249,7 +248,10 @@ def process_utterance(wav_fpath: np.ndarray, text: str, out_dir: Path, basename:
     if skip_existing and mel_fpath.exists():  # and wav_fpath.exists():
         return None
 
-    wav, _ = librosa.load(wav_fpath, hparams.sample_rate)
+    wav, source_sr = librosa.load(wav_fpath, None)
+    if source_sr != hparams.sample_rate:
+        wav = librosa.resample(wav, source_sr, hparams.sample_rate)
+
     if hparams.rescale:
         wav = wav / np.abs(wav).max() * hparams.rescaling_max
 
@@ -282,7 +284,11 @@ def embed_utterance(fpaths, encoder_model_fpath, hparams):
     if embed_fpath.exists():
         return
     # wav = np.load(wav_fpath)
-    wav, _ = librosa.load(str(wav_fpath), hparams.sample_rate)
+
+    wav, source_sr = librosa.load(wav_fpath, None)
+    if source_sr != hparams.sample_rate:
+        wav = librosa.resample(wav, source_sr, hparams.sample_rate)
+
     if hparams.rescale:
         wav = wav / np.abs(wav).max() * hparams.rescaling_max
 

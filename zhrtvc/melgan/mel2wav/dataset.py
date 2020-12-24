@@ -4,6 +4,7 @@ import torch.nn.functional as F
 
 from librosa.core import load
 from librosa.util import normalize
+import librosa
 
 from pathlib import Path
 import numpy as np
@@ -67,7 +68,10 @@ class AudioDataset(torch.utils.data.Dataset):
         """
         Loads wavdata into torch array
         """
-        data, sampling_rate = load(str(full_path), sr=self.sampling_rate)
+        data, sampling_rate = load(str(full_path), sr=None)
+        if sampling_rate != self.sampling_rate:
+            data = librosa.resample(data, sampling_rate, self.sampling_rate)
+
         data = 0.95 * normalize(data)
 
         if self.augment:
