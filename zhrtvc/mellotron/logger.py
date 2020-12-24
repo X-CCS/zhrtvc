@@ -12,7 +12,7 @@ from .layers import TacotronSTFT
 
 class Tacotron2Logger(SummaryWriter):
     def __init__(self, logdir, hparams=None):
-        super(Tacotron2Logger, self).__init__(logdir)
+        super(Tacotron2Logger, self).__init__(logdir, max_queue=100, filename_suffix='.tensorboard')
         self.stft = TacotronSTFT(**{k: v for k, v in hparams.items()})
 
     def log_training(self, reduced_loss, grad_norm, learning_rate, duration,
@@ -69,7 +69,7 @@ class Tacotron2Logger(SummaryWriter):
         )
 
         # spk = int(speaker_ids[idx].data.cpu().numpy().flatten()[0])
-        spk = ' '.join([f'{w:.2f}' for w in speaker_ids[idx].data.cpu().numpy().flatten()])  # speaker_ids可能是向量
+        spk = ' '.join([f'{w:.2g}' for w in speaker_ids[idx].data.cpu().numpy().flatten()])  # speaker_ids可能是向量
         ph_ids = text_inputs[idx].data.cpu().numpy().flatten()
         phs_text = sequence_to_text(ph_ids)
         phs_size = len(ph_ids)

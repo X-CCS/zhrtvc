@@ -30,7 +30,7 @@ def parse_args():
                         help='WaveGlow model file path')
     parser.add_argument('--device', type=str, default='', help='Use device to inference')
     parser.add_argument('--sampling_rate', type=int, default=22050, help='Input file path or text')
-    parser.add_argument('--input', type=str, default='这里有很多金矿。', help='Input file path or text')
+    parser.add_argument('--input', type=str, default='这里有很多金矿。\tbiaobei', help='Input file path or text')
     parser.add_argument('--output', type=str, default='../results/demo_inference', help='Output file path or dir')
     parser.add_argument("--cuda", type=str, default='0', help='Set CUDA_VISIBLE_DEVICES')
     args = parser.parse_args()
@@ -183,9 +183,9 @@ if __name__ == "__main__":
     load_models(args)
 
     # 模型测试
-    text_test = '这是个试水的例子。'
-
-    text_data, style_data, speaker_data, f0_data = transform_mellotron_input_data(text=text_test, device=_device)
+    text_test = '这是个试水的例子。\tspeaker'
+    text, speaker = text_test.split('\t')
+    text_data, style_data, speaker_data, f0_data = transform_mellotron_input_data(text=text, speaker=speaker, device=_device)
 
     mels, mels_postnet, gates, alignments = mellotron.generate_mel(text_data, style_data, speaker_data, f0_data)
 
@@ -207,7 +207,8 @@ if __name__ == "__main__":
 
     for text_input in tqdm(text_inputs, 'TTS', ncols=100):
         # print('Running: {}'.format(text_input))
-        text_data, style_data, speaker_data, f0_data = transform_mellotron_input_data(text=text_input, device=_device)
+        text, speaker = text_input.split('\t')
+        text_data, style_data, speaker_data, f0_data = transform_mellotron_input_data(text=text_input, speaker=speaker, device=_device)
 
         mels, mels_postnet, gates, alignments = mellotron.generate_mel(text_data, style_data, speaker_data, f0_data)
 

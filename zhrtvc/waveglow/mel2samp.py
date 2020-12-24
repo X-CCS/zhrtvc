@@ -72,10 +72,11 @@ def load_wav_to_torch(full_path, sr_force=None):
     """
     data, sampling_rate = librosa.load(full_path, sr=None)
     if (sr_force is not None) and (sampling_rate != sr_force):
-        librosa.resample(data, orig_sr=sampling_rate, target_sr=sr_force)
+        data = librosa.resample(data, orig_sr=sampling_rate, target_sr=sr_force)
     # sampling_rate, data = read(full_path)
     if (max(data) > 1) or (min(data) < -1):
-        print(max(data), min(data))
+        logger.info(
+            'Wave max or min value out of -1 to 1. Max value is {} and min value is {}.'.format(max(data), min(data)))
     return torch.from_numpy(data).float(), (sr_force or sampling_rate)
 
 

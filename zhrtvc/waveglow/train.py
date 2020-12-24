@@ -211,35 +211,38 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
 
                     if with_tensorboard:
                         # outputs[0].shape: torch.Size([1, 8, 1000])
-                        pred_audio = F.normalize(outputs[0].data[0].flatten().unsqueeze(0), 0).squeeze() * 1.8 - 0.9
+                        with torch.no_grad():
+                            d = model.infer(mel.data[0].unsqueeze(0), sigma=sigma)
+                            d = d.cpu().squeeze()
+                            pred_audio = (d - d.min()) * 1.98 / (d.max() - d.min()) - 0.99
 
-                        logger.add_audio(
-                            "generated/iteration-{}.wav".format(iteration),
-                            pred_audio,
-                            iteration,
-                            sample_rate=trainset.sampling_rate,
-                        )
+                            logger.add_audio(
+                                "generated/iteration-{}.wav".format(iteration),
+                                pred_audio,
+                                iteration,
+                                sample_rate=trainset.sampling_rate,
+                            )
 
-                        true_audio = audio.data[0].squeeze()
-                        logger.add_audio(
-                            "original/iteration-{}.wav".format(iteration),
-                            true_audio,
-                            iteration,
-                            sample_rate=trainset.sampling_rate,
-                        )
+                            true_audio = audio.data[0].squeeze()
+                            logger.add_audio(
+                                "original/iteration-{}.wav".format(iteration),
+                                true_audio,
+                                iteration,
+                                sample_rate=trainset.sampling_rate,
+                            )
 
-                        # 查看频谱，直观了解生成语音的情况
-                        mel_output = trainset.get_mel(pred_audio.cpu())
-                        logger.add_image(
-                            "generated/iteration-{}.png".format(iteration),
-                            plot_spectrogram_to_numpy(mel_output.data.cpu().numpy()),
-                            iteration, dataformats='HWC')
+                            # 查看频谱，直观了解生成语音的情况
+                            mel_output = trainset.get_mel(pred_audio.cpu())
+                            logger.add_image(
+                                "generated/iteration-{}.png".format(iteration),
+                                plot_spectrogram_to_numpy(mel_output.data.cpu().numpy()),
+                                iteration, dataformats='HWC')
 
-                        mel_input = mel.data[0]
-                        logger.add_image(
-                            "original/iteration-{}.png".format(iteration),
-                            plot_spectrogram_to_numpy(mel_input.data.cpu().numpy()),
-                            iteration, dataformats='HWC')
+                            mel_input = mel.data[0]
+                            logger.add_image(
+                                "original/iteration-{}.png".format(iteration),
+                                plot_spectrogram_to_numpy(mel_input.data.cpu().numpy()),
+                                iteration, dataformats='HWC')
 
             iteration += 1
 

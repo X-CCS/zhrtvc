@@ -24,9 +24,11 @@ from mellotron.utils import load_wav_to_torch, load_filepaths_and_text, load_fil
 from mellotron.text import text_to_sequence, cmudict
 from mellotron.yin import compute_yin
 
+from encoder import inference as encoder
+
 
 def transform_embed(wav, encoder_model_fpath=Path()):
-    from encoder import inference as encoder
+    # from encoder import inference as encoder
     if not encoder.is_loaded():
         encoder.load_model(encoder_model_fpath)
 
@@ -106,7 +108,7 @@ def transform_data_train(hparams, text_data, mel_data, speaker_data, f0_data, em
 
     if isinstance(f0_data, np.ndarray):
         f0 = f0_data  # (1, 395)
-    else:
+    elif f0_data is not None:
         f0 = f0_data.cpu().numpy()
 
     if isinstance(embed_data, np.ndarray):
@@ -147,6 +149,8 @@ def transform_data_train(hparams, text_data, mel_data, speaker_data, f0_data, em
         speaker = speaker * 0
     elif mode == 'mspk':
         # 发音人用md5的数字生成的向量表示，不用f0。
+        f0 = None
+    elif mode == 'rtvc':
         f0 = None
     else:
         # 默认：不用f0。
@@ -195,6 +199,7 @@ class TextMelLoader(torch.utils.data.Dataset):
         self.max_decoder_steps = hparams.max_decoder_steps
 
         self.f0_dim = hparams.prenet_f0_dim  # f0的维度设置
+        self.encoder_model_fpath = hparams.encoder_model_fpath
 
         self.cmudict = None
         if hparams.cmudict_path is not None:
@@ -262,45 +267,68 @@ class TextMelLoader(torch.utils.data.Dataset):
         f0 = [0.0] * pad + f0 + [0.0] * pad
 
         f0 = np.array(f0, dtype=np.float32)
-        return f0
-
-    def get_data(self, audiopath_and_text):
-        audiopath, text, speaker = audiopath_and_text
-        text = self.get_text(text)
-        mel, f0 = self.get_mel_and_f0(audiopath)
-        speaker_id = self.get_speaker_id(speaker)
-        return (text, mel, speaker_id, f0)
-
-    def get_speaker_id(self, speaker_id):
-        if self.hparams.n_speakers == 0:
-            # 一个说话人名字对应唯一的一个说话人向量
-            hex_idx = hashlib.md5(speaker_id.encode('utf8')).hexdigest()
-            out = (np.array([int(w, 16) for w in hex_idx])[None] - 7) / 10
-            return torch.FloatTensor(out)
-        else:
-            return torch.IntTensor([self.speaker_ids[speaker_id]])
-
-    def get_mel_and_f0(self, filepath):
-        audio, sampling_rate = load_wav_to_torch(filepath, sr_force=self.stft.sampling_rate)
-        audio_norm = audio / self.max_wav_value
-        if sampling_rate != self.stft.sampling_rate:
-            raise ValueError("{} SR doesn't match target {} SR".format(
-                sampling_rate, self.stft.sampling_rate))
-        audio_norm = audio_norm.unsqueeze(0)
-        melspec = self.stft.mel_spectrogram(audio_norm)
-        melspec = torch.squeeze(melspec, 0)
-
-        # melspec = linearspectrogram_torch(audio_norm)  # 用aukit的频谱生成方案
-
-        f0 = self.get_f0(audio.cpu().numpy(), sampling_rate,
-                         self.filter_length, self.hop_length, self.f0_min,
-                         self.f0_max, self.harm_thresh)
-        f0 = torch.from_numpy(f0)[None]
         # f0 = f0[:, :melspec.size(1)]
 
         # 用零向量替换F0
         # f0 = torch.zeros(1, melspec.shape[1], dtype=torch.float)
-        return melspec, f0
+        # return melspec, f0
+        return f0
+
+    def get_embed(self, wav):
+        # from encoder import inference as encoder
+        if not encoder.is_loaded():
+            encoder.load_model(self.encoder_model_fpath, device='cpu')
+            # 用cpu避免以下报错。
+            # "RuntimeError: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the ‘spawn’ start method"
+
+        wav = encoder.preprocess_wav(wav)
+        embed = encoder.embed_utterance(wav)
+        return embed
+
+    def get_data(self, audiopath_and_text):
+        audiopath, text, speaker = audiopath_and_text
+
+        text = self.get_text(text)
+
+        audio, sampling_rate = load_wav_to_torch(audiopath, sr_force=self.stft.sampling_rate)
+        audio_norm = audio / self.max_wav_value
+        if sampling_rate != self.stft.sampling_rate:
+            raise ValueError("{} SR doesn't match target {} SR".format(
+                sampling_rate, self.stft.sampling_rate))
+
+        mel = self.get_mel(audio_norm)
+
+        if self.hparams.prenet_f0_dim > 0:
+            f0 = self.get_f0(audio.cpu().numpy(), sampling_rate,
+                             self.filter_length, self.hop_length, self.f0_min,
+                             self.f0_max, self.harm_thresh)
+            f0 = torch.from_numpy(f0)[None]
+        else:
+            f0 = None
+
+        if self.hparams.train_mode.endswith('rtvc'):
+            embed = self.get_embed(audio_norm.cpu().numpy())
+            speaker = torch.from_numpy(embed)[None]
+        else:
+            speaker = self.get_speaker(speaker)
+
+        return (text, mel, speaker, f0)
+
+    def get_speaker(self, speaker):
+        if self.hparams.train_mode.endswith('mspk'):
+            # 一个说话人名字对应唯一的一个说话人向量
+            hex_idx = hashlib.md5(speaker.encode('utf8')).hexdigest()
+            out = (np.array([int(w, 16) for w in hex_idx])[None] - 7) / 10
+            return torch.FloatTensor(out)
+        else:
+            return torch.IntTensor([self.speaker_ids[speaker]])
+
+    def get_mel(self, wav):
+        audio_norm = wav.unsqueeze(0)
+        melspec = self.stft.mel_spectrogram(audio_norm)
+        melspec = torch.squeeze(melspec, 0)
+        # melspec = linearspectrogram_torch(audio_norm)  # 用aukit的频谱生成方案
+        return melspec
 
     def get_text(self, text):
         text_norm = torch.IntTensor(

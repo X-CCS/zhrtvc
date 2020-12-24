@@ -585,8 +585,8 @@ class Tacotron2(nn.Module):
         self.postnet = Postnet(hparams)
         if hparams.with_gst:
             self.gst = GST(hparams)
-        if hparams.n_speakers == 0:
-            self.speaker_embedding = nn.Linear(hparams.speaker_embedding_dim, hparams.speaker_embedding_dim)
+        if hparams.train_mode.endswith(('rtvc', 'mspk')):
+            self.speaker_embedding = nn.Linear(hparams.n_speakers, hparams.speaker_embedding_dim)
         else:
             self.speaker_embedding = nn.Embedding(hparams.n_speakers, hparams.speaker_embedding_dim)
 

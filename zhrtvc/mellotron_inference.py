@@ -171,11 +171,12 @@ if __name__ == "__main__":
             out_path = args.out_dir.joinpath("demo_{}_{}_out.wav".format(cur_time, cur_text))
             aukit.save_wav(wav_output, out_path, sr=msyner.stft.sampling_rate)  # save
 
-            ref_path = args.out_dir.joinpath("demo_{}_{}_ref.wav".format(cur_time, cur_text))
-            shutil.copyfile(audio, out_path)
+            if isinstance(audio, (Path, str)) and Path(audio).is_file():
+                ref_path = args.out_dir.joinpath("demo_{}_{}_ref.wav".format(cur_time, cur_text))
+                shutil.copyfile(audio, ref_path)
 
             fig_path = args.out_dir.joinpath("demo_{}_{}_fig.jpg".format(cur_time, cur_text))
-            plot_mel_alignment_gate_audio(spec, align, gate, wav[::16])
+            plot_mel_alignment_gate_audio(spec, align, gate, wav[::msyner.stft.sampling_rate // 1000])
             plt.savefig(fig_path)
             plt.close()
 

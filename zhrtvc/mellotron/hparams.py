@@ -35,13 +35,15 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         # f06s02:用语音的embed向量代替，基频speaker_id用0表示，prenet_f0_dim=8。
         # gst:用gst模式，把speaker_id用0表示，prenet_f0_dim=0, token_embedding_size=64 * level, with_gst=True。
         # tacotron:用tacotron模式，把speaker_id用0表示，prenet_f0_dim=0, token_embedding_size=0, with_gst=False。
-        # mspk:multispeaker，快捷表示说话人，用speaker的md5的32位16进制数代表说话人，不用基频，speaker_embedding_dim=32, n_speakers=0, prenet_f0_dim=0。
+        # mspk:multispeaker，快捷表示说话人，用speaker的md5的32位16进制数代表说话人，不用基频，encoder_model_fpath='mspk', speaker_embedding_dim=32, n_speakers=0, prenet_f0_dim=0。
+        # rtvc:利用语音编码向量的语音克隆，用GE2E模型把语音转为256维向量，作为speaker向量输入，不用基频，encoder_model_fpath='fpath', speaker_embedding_dim=32, n_speakers=256, prenet_f0_dim=0。
 
         # training_files=r"../../data/SV2TTS/mellotron/samples_ssml/train.txt",
         # 文件一行记录一个语音信息，每行的数据结构：数据文件夹名\t语音源文件\t文本\t说话人名称\n，样例如下：
         # 000000	Aibao/005397.mp3	他走近钢琴并开始演奏“祖国从哪里开始”。	0
         # validation_files=r"../../data/SV2TTS/mellotron/samples_ssml/validation.txt",
         # 'filelists/ljs_audiopaths_text_sid_val_filelist.txt',
+        encoder_model_fpath=r'../models/encoder/saved_models/ge2e_pretrained.pt',
         text_cleaners='biaobei',  # ['chinese_cleaners'],
         p_arpabet=1.0,
         cmudict_path=None,  # "data/cmu_dictionary",
@@ -101,7 +103,7 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         postnet_n_convolutions=5,
 
         # Speaker embedding
-        n_speakers=0,  # 1000,  # 123
+        n_speakers=32,  # 1000,  # 123
         speaker_embedding_dim=32,  # 16 * level,  # 32 * level,  # 128,
 
         # Reference encoder

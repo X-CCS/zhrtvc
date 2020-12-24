@@ -85,7 +85,7 @@ def main(input_path, waveglow_path, config_path, output_path, save_model_path):
         # mel = stft.mel_spectrogram(audio_norm)
         # mel = torch.autograd.Variable(mel.cuda())
 
-        audio, sr = load_wav_to_torch(audio_path)
+        audio, sr = load_wav_to_torch(audio_path, sr_force=data_config['sampling_rate'])
         mel = mel2samp.get_mel(audio)
         mel = torch.autograd.Variable(mel.cuda())
         mel = torch.unsqueeze(mel, 0)
