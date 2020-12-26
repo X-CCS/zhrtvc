@@ -362,7 +362,7 @@ def train(input_directory, output_directory, log_directory, checkpoint_path, war
                          hparams.batch_size, n_gpus, collate_fn, logger,
                          hparams.distributed_run, rank, outdir=Path(output_directory), hparams=hparams)
                 if rank == 0:
-                    checkpoint_path = os.path.join(checkpoint_folder, "checkpoint-{:06d}.pt".format(iteration))
+                    checkpoint_path = os.path.join(checkpoint_folder, "mellotron-{:06d}.pt".format(iteration))
                     save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
 
             iteration += 1

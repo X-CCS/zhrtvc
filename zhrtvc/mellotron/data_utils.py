@@ -32,8 +32,15 @@ def transform_embed(wav, encoder_model_fpath=Path()):
     if not encoder.is_loaded():
         encoder.load_model(encoder_model_fpath)
 
-    wav = encoder.preprocess_wav(wav)
-    embed = encoder.embed_utterance(wav)
+    wav_ = encoder.preprocess_wav(wav)
+    # Take segment
+    segment_length = 2 * encoder.sampling_rate  # 随机选取2秒语音生成语音表示向量
+    if len(wav_) > segment_length:
+        max_audio_start = len(wav_) - segment_length
+        audio_start = random.randint(0, max_audio_start)
+        wav_ = wav_[audio_start:audio_start + segment_length]
+
+    embed = encoder.embed_utterance(wav_)
     return embed
 
 
@@ -180,7 +187,10 @@ class TextMelLoader(torch.utils.data.Dataset):
             else:
                 self.mode = True
         else:
-            self.audiopaths_and_text = load_filepaths_and_text(audiopaths_and_text, split='\t')
+            if isinstance(audiopaths_and_text, (str, Path)) and os.path.isfile(audiopaths_and_text):
+                self.audiopaths_and_text = load_filepaths_and_text(audiopaths_and_text, split='\t')
+            else:
+                self.audiopaths_and_text = ['audiopath', 'text', 'speaker']
             self.mode = False
         self.text_cleaners = hparams.text_cleaners
         self.max_wav_value = hparams.max_wav_value
@@ -281,8 +291,15 @@ class TextMelLoader(torch.utils.data.Dataset):
             # 用cpu避免以下报错。
             # "RuntimeError: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the ‘spawn’ start method"
 
-        wav = encoder.preprocess_wav(wav)
-        embed = encoder.embed_utterance(wav)
+        wav_ = encoder.preprocess_wav(wav)
+        # Take segment
+        segment_length = 2 * encoder.sampling_rate  # 随机选取2秒语音生成语音表示向量
+        if len(wav_) > segment_length:
+            max_audio_start = len(wav_) - segment_length
+            audio_start = random.randint(0, max_audio_start)
+            wav_ = wav_[audio_start:audio_start + segment_length]
+
+        embed = encoder.embed_utterance(wav_)
         return embed
 
     def get_data(self, audiopath_and_text):

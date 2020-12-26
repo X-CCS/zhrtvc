@@ -34,19 +34,21 @@ from .mel2samp import files_to_list, MAX_WAV_VALUE
 from .denoiser import Denoiser
 
 _model = None
-
+_denoiser = None
 
 def load_waveglow_model(model_path, device=None):
     """
     导入训练模型得到的checkpoint模型文件。
     """
     global _model
+    global _denoiser
     if device is None:
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if _model is None:
         _model = torch.load(model_path, map_location=device)['model']
         _model = _model.remove_weightnorm(_model)
         _model.to(device).eval()
+        _denoiser = Denoiser(_model).to(device)
 
 
 def load_waveglow_torch(model_path, device=None):
@@ -54,9 +56,11 @@ def load_waveglow_torch(model_path, device=None):
     用torch.load直接导入模型文件，不需要导入模型代码。
     """
     global _model
+    global _denoiser
     if device is None:
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
     _model = torch.load(model_path, map_location=device)
+    _denoiser = Denoiser(_model).to(device)
     return _model
 
 
@@ -73,11 +77,17 @@ def generate_wave(mel, **kwargs):
     用声码器模型把mel频谱转为音频信号。
     """
     global _model
+    global _denoiser
+    sigma = kwargs.get('sigma', 1.0)
+    denoiser_strength = kwargs.get('denoiser_strength', 0)
     if not is_loaded():
         load_waveglow_model(**kwargs)
     mel = torch.autograd.Variable(mel)
     with torch.no_grad():
-        wav = _model.infer(mel, sigma=1.0)
+        wav = _model.infer(mel, sigma=sigma)
+        if denoiser_strength > 0:
+            wav = _denoiser(wav, denoiser_strength)
+            wav = wav.squeeze(0)
         return wav
 
 

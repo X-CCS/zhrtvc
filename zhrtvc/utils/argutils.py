@@ -1,6 +1,7 @@
 from pathlib import Path
 import numpy as np
 import argparse
+import json
 
 _type_priorities = [  # In decreasing order
     Path,
@@ -45,17 +46,23 @@ def args2dict(args: argparse.Namespace, parser=None):
     return out
 
 
-def locals2dict(src: dict):
+def locals2dict(src: dict, maxlen=255):
     outdt = {}
     for key, value in src.items():
         if isinstance(value, Path):
             outdt[key] = str(value)
         elif type(value) in _type_priorities:
             outdt[key] = value
-        elif 'shape' in dir(value):
+        else:
+            outdt[key] = str(value)[:maxlen]
+
+        if 'shape' in dir(value):
             outdt['{}_shape'.format(key)] = str(value.shape)
         elif 'size' in dir(value):
             outdt['{}_size'.format(key)] = str(value.size())
         elif '__len__' in dir(value):
-            outdt['{}_len'.format(key)] = str(value.__len__)
+            try:
+                outdt['{}_len'.format(key)] = len(value)
+            except:
+                pass
     return outdt

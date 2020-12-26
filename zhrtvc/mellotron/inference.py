@@ -19,6 +19,7 @@ import yaml
 from .model import Tacotron2, load_model
 from .hparams import create_hparams, Dict2Obj
 from .data_utils import transform_mel, transform_text, transform_f0, transform_embed, transform_speaker
+from .data_utils import TextMelLoader
 from .layers import TacotronSTFT
 
 _model = None
@@ -78,7 +79,7 @@ def generate_mel(text, style, speaker, f0, **kwargs):
 
 
 class MellotronSynthesizer():
-    def __init__(self, model_path, speakers_path, hparams_path, device=_device):
+    def __init__(self, model_path, speakers_path, hparams_path, texts_path, device=_device):
         self.device = device
 
         args_hparams = open(hparams_path, encoding='utf8').read()
@@ -88,24 +89,22 @@ class MellotronSynthesizer():
         self.model.load_state_dict(torch.load(model_path, map_location=self.device)['state_dict'])
 
         self.speakers = json.load(open(speakers_path, encoding='utf8'))
+        self.texts = [w.strip() for w in open(texts_path, encoding='utf8')]
 
         self.stft = TacotronSTFT(
             self.hparams.filter_length, self.hparams.hop_length, self.hparams.win_length,
             self.hparams.n_mel_channels, self.hparams.sampling_rate, self.hparams.mel_fmin,
             self.hparams.mel_fmax)
 
+        self.dataloader = TextMelLoader(audiopaths_and_text=texts_path, hparams=self.hparams, speaker_ids=self.speakers)
+
+
     def synthesize(self, text, speaker, audio, with_show=False):
-        text_encoded = torch.LongTensor(transform_text(text, text_cleaners='hanzi'))[None, :].to(self.device)
-        if self.hparams.n_speakers == 0:
-            speaker_id = torch.FloatTensor(transform_speaker(speaker, speaker_ids=None)).to(self.device)
-        else:
-            speaker_id = torch.LongTensor(transform_speaker(speaker, speaker_ids=self.speakers)).to(self.device)
-        if isinstance(audio, (Path, str)) and Path(audio).is_file():
-            audio = librosa.load(audio, sr=None)[0]
-            style_input = torch.FloatTensor(transform_mel(audio, stft=self.stft))[None, :].to(self.device)
-        else:
-            style_input = 0
-        pitch_contour = None
+        text_data, mel_data, speaker_data, f0_data = self.dataloader.get_data_train_v2([audio, text, speaker])
+        text_encoded = text_data[None, :].long().to(self.device)
+        style_input = 0
+        speaker_id = speaker_data.to(self.device)
+        pitch_contour = f0_data
 
         with torch.no_grad():
             mel_outputs, mel_outputs_postnet, gate_outputs, alignments = self.model.inference(

@@ -29,6 +29,8 @@ import json
 import os
 import yaml
 import traceback
+import shutil
+from pathlib import Path
 from tqdm import tqdm
 import torch
 from matplotlib import pyplot as plt
@@ -164,7 +166,14 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
 
     if with_tensorboard and rank == 0:
         from tensorboardX import SummaryWriter
-        logger = SummaryWriter(os.path.join(output_directory, 'logs'))
+        logger = SummaryWriter(
+            os.path.join(os.path.dirname(output_directory), 'tensorboard'),
+            filename_suffix='.tensorboard')
+
+    with open(Path(output_directory).parent.joinpath('metadata', 'train.txt'), 'wt', encoding='utf8') as fout:
+        for line in trainset.audio_files:
+            fpath = os.path.abspath(line)
+            fout.write(f'{fpath}\n')
 
     model.train()
     epoch_offset = max(0, int(iteration / len(train_loader)))
@@ -268,6 +277,12 @@ if __name__ == "__main__":
     dist_config = config["dist_config"]
     # global waveglow_config
     waveglow_config = config["waveglow_config"]
+
+    metadata_dir = Path(train_config["output_directory"]).parent.joinpath('metadata')
+    metadata_dir.mkdir(exist_ok=True, parents=True)
+
+    shutil.copyfile(args.config, metadata_dir.joinpath('config.json'))
+    shutil.copyfile(data_config['training_files'], metadata_dir.joinpath('train.txt'))
 
     num_gpus = torch.cuda.device_count()
     if num_gpus > 1:

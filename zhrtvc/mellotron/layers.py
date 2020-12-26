@@ -64,6 +64,13 @@ class TacotronSTFT(torch.nn.Module):
             sampling_rate, filter_length, n_mel_channels, mel_fmin, mel_fmax)
         mel_basis = torch.from_numpy(mel_basis).float()
         self.register_buffer('mel_basis', mel_basis)
+        self.denoiser = None
+        self.denoiser_mode = ''
+
+    def create_denoiser(self, vocoder=None, mode='zeros'):
+        voc = vocoder or self.griffin_lim_
+        self.denoiser_mode = mode
+        self.denoiser = Denoiser(vocoder=voc, stft=self.stft_fn, mode=mode)
 
     def spectral_normalize(self, magnitudes):
         output = dynamic_range_compression(magnitudes)
@@ -92,7 +99,7 @@ class TacotronSTFT(torch.nn.Module):
         mel_output = self.spectral_normalize(mel_output)
         return mel_output
 
-    def griffin_lim(self, x, n_iters=60):
+    def griffin_lim_(self, x, n_iters=60):
         mel_decompress = self.spectral_de_normalize(x)
         mel_decompress = mel_decompress.transpose(1, 2).data.cpu()
         spec_from_mel_scaling = 100
@@ -101,3 +108,46 @@ class TacotronSTFT(torch.nn.Module):
         spec_from_mel = spec_from_mel * spec_from_mel_scaling
         wav_outputs = griffin_lim(torch.autograd.Variable(spec_from_mel[:, :, :-1]), self.stft_fn, n_iters)
         return wav_outputs
+
+    def griffin_lim(self, x, n_iters=60, denoiser_mode='zeros', denoiser_strength=0.1):
+        wav_outputs = self.griffin_lim_(x, n_iters=n_iters)
+        if self.denoiser_mode != denoiser_mode or self.denoiser is None:
+            voc = lambda x: self.griffin_lim_(x, n_iters=n_iters)
+            self.create_denoiser(vocoder=voc, mode=denoiser_mode)
+        wav_outputs = self.denoiser(wav_outputs, denoiser_strength)
+        wav_outputs = wav_outputs.squeeze(0)
+        return wav_outputs
+
+
+class Denoiser(torch.nn.Module):
+    """ Removes model bias from audio produced with waveglow """
+
+    def __init__(self, vocoder, stft, mode='zeros'):
+        super(Denoiser, self).__init__()
+        self.vocoder = vocoder
+        self.stft = stft
+        if mode == 'zeros':
+            mel_input = torch.zeros(
+                (1, 80, 88),
+                dtype=torch.float,
+                device=None)
+        elif mode == 'normal':
+            mel_input = torch.randn(
+                (1, 80, 88),
+                dtype=torch.float,
+                device=None)
+        else:
+            raise Exception("Mode {} if not supported".format(mode))
+
+        with torch.no_grad():
+            bias_audio = self.vocoder(mel_input).float()
+            bias_spec, _ = self.stft.transform(bias_audio)
+
+        self.register_buffer('bias_spec', bias_spec[:, :, 0][:, :, None])
+
+    def forward(self, audio, strength=0.1):
+        audio_spec, audio_angles = self.stft.transform(audio.float())
+        audio_spec_denoised = audio_spec - self.bias_spec * strength
+        audio_spec_denoised = torch.clamp(audio_spec_denoised, 0.0)
+        audio_denoised = self.stft.inverse(audio_spec_denoised, audio_angles)
+        return audio_denoised

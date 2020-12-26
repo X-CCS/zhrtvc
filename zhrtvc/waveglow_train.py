@@ -13,11 +13,11 @@ logger = logging.getLogger(Path(__name__).stem)
 
 import argparse
 import os
-
+import shutil
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', type=str, default='waveglow/config.json',
+    parser.add_argument('-c', '--config', type=str, default='./waveglow/config.json',
                         help='JSON file for configuration')
     parser.add_argument('-r', '--rank', type=int, default=0,
                         help='rank of process for distributed')
@@ -55,6 +55,12 @@ if __name__ == "__main__":
     dist_config = config["dist_config"]
     # global waveglow_config
     waveglow_config = config["waveglow_config"]
+
+    metadata_dir = Path(train_config["output_directory"]).parent.joinpath('metadata')
+    metadata_dir.mkdir(exist_ok=True, parents=True)
+
+    shutil.copyfile(args.config, metadata_dir.joinpath('config.json'))
+    # shutil.copyfile(data_config['training_files'], metadata_dir.joinpath('train.txt'))
 
     num_gpus = torch.cuda.device_count()
     if num_gpus > 1:

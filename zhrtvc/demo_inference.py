@@ -23,15 +23,26 @@ logger = logging.getLogger(Path(__name__).stem)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='声音编码器、语音合成器和声码器推理')
-    parser.add_argument('--mellotron_path', type=str, default=r"../models/mellotron/samples/mellotron-samples-000000.pt",  #'../models/mellotron/mellotron_samples_model.pt'
+    parser.add_argument('--mellotron_path', type=str,
+                        default=r"../models/mellotron/samples/mellotron-samples-000000.pt",
+                        # '../models/mellotron/mellotron_samples_model.pt'
                         help='Mellotron model file path')
     parser.add_argument('--melgan_path', type=str, default='', help='MelGAN model file path')
-    parser.add_argument('--waveglow_path', type=str, default='../models/waveglow/waveglow_v5_model.pt',
+    parser.add_argument('--waveglow_path', type=str, default='../models/waveglow/samples/waveglow-000000.model.pt',
                         help='WaveGlow model file path')
+    parser.add_argument('--mellotron_hparams', type=str, default=r"../models/mellotron/samples/metadata/hparams.json",
+                        # '../models/mellotron/mellotron_samples_model.pt'
+                        help='Mellotron hparams json file path')
+    parser.add_argument('--is_simple', type=int, default=1,
+                        help='是否简易模式。')
+    parser.add_argument('--waveglow_kwargs', type=str, default=r'{"denoiser_strength":0.1,"sigma":1}',
+                        help='Waveglow kwargs json')
     parser.add_argument('--device', type=str, default='', help='Use device to inference')
     parser.add_argument('--sampling_rate', type=int, default=22050, help='Input file path or text')
-    parser.add_argument('--input', type=str, default='这里有很多金矿。\tbiaobei', help='Input file path or text')
-    parser.add_argument('--output', type=str, default='../results/demo_inference', help='Output file path or dir')
+    parser.add_argument('--input', type=str, default=r"../models/mellotron/samples/metadata/validation.txt",
+                        help='Input file path or text')
+    parser.add_argument('--output', type=str, default=r"../models/mellotron/samples/test/000000",
+                        help='Output file path or dir')
     parser.add_argument("--cuda", type=str, default='0', help='Set CUDA_VISIBLE_DEVICES')
     args = parser.parse_args()
     return args
@@ -128,17 +139,24 @@ def load_models(args):
         mellotron.load_mellotron_torch(args.mellotron_path)
 
 
-def transform_mellotron_input_data(text, style='', speaker='', f0='', device=''):
+def transform_mellotron_input_data(dataloader, text, speaker='', audio='', device=''):
     if not device:
         device = _device
-    text_data = torch.LongTensor(phkit.chinese_text_to_sequence(text, cleaner_names='hanzi'))[None, :].to(device)
-    style_data = 0
 
-    hex_idx = hashlib.md5(speaker.encode('utf8')).hexdigest()
-    out = (np.array([int(w, 16) for w in hex_idx])[None] - 7) / 10  # -0.7~0.8
-    speaker_data = torch.FloatTensor(out).to(device)
-    # speaker_data = torch.zeros([1], dtype=torch.long).to(device)
-    f0_data = None
+    text_data, mel_data, speaker_data, f0_data = dataloader.get_data_train_v2([audio, text, speaker])
+    text_data = text_data[None, :].long().to(device)
+    style_data = 0
+    speaker_data = speaker_data.to(device)
+    f0_data = f0_data
+
+    # text_data = torch.LongTensor(phkit.chinese_text_to_sequence(text, cleaner_names='hanzi'))[None, :].to(device)
+    # style_data = 0
+    #
+    # hex_idx = hashlib.md5(speaker.encode('utf8')).hexdigest()
+    # out = (np.array([int(w, 16) for w in hex_idx])[None] - 7) / 10  # -0.7~0.8
+    # speaker_data = torch.FloatTensor(out).to(device)
+    # # speaker_data = torch.zeros([1], dtype=torch.long).to(device)
+    # f0_data = None
     return text_data, style_data, speaker_data, f0_data
 
 
@@ -179,48 +197,91 @@ if __name__ == "__main__":
     else:
         _device = args.device
 
+    if args.is_simple:
+        workdir = Path(args.mellotron_path).parent
+        mellotron_stem = Path(args.mellotron_path).stem
+        waveglow_stem = Path(args.waveglow_path).stem
+
+        mellotron_hparams_path = workdir.joinpath('metadata', 'hparams.json').__str__()
+        texts_path = workdir.joinpath('metadata', 'validation.txt').__str__()
+        output_dir = workdir.joinpath('test', f'{mellotron_stem}.{waveglow_stem}').__str__()
+    else:
+        mellotron_hparams_path = args.mellotron_hparams
+        texts_path = args.input
+        output_dir = args.output
+
     # 模型导入
     load_models(args)
 
+    mellotron_hparams = mellotron.create_hparams(open(mellotron_hparams_path, encoding='utf8').read())
+    dataloader = mellotron.TextMelLoader(audiopaths_and_text='', hparams=mellotron_hparams, speaker_ids=None,
+                                         mode='test')
+
+    waveglow_kwargs = json.loads(args.waveglow_kwargs)
     # 模型测试
-    text_test = '这是个试水的例子。\tspeaker'
-    text, speaker = text_test.split('\t')
-    text_data, style_data, speaker_data, f0_data = transform_mellotron_input_data(text=text, speaker=speaker, device=_device)
-
-    mels, mels_postnet, gates, alignments = mellotron.generate_mel(text_data, style_data, speaker_data, f0_data)
-
-    wavs = waveglow.generate_wave(mel=mels)
-
     with tempfile.TemporaryDirectory() as tmpdir:
-        wav_output = wavs.squeeze().cpu().numpy()
-        aukit.save_wav(wav_output, os.path.join(tmpdir, 'demo_example.wav'), sr=args.sampling_rate)
+        audio = os.path.join(tmpdir, 'audio_example.wav')
+        pydub.AudioSegment.silent(3000, frame_rate=args.sampling_rate).export(audio, format='wav')
 
-    # 模型推理
-
-    if os.path.isfile(args.input):
-        text_inputs = [w.strip() for w in open(args.input, encoding='utf8')]
-    else:
-        text_inputs = [args.input]
-
-    output_dir = args.output
-    Path(output_dir).mkdir(exist_ok=True, parents=True)
-
-    for text_input in tqdm(text_inputs, 'TTS', ncols=100):
-        # print('Running: {}'.format(text_input))
-        text, speaker = text_input.split('\t')
-        text_data, style_data, speaker_data, f0_data = transform_mellotron_input_data(text=text_input, speaker=speaker, device=_device)
+        text = '这是个试水的例子。'
+        speaker = 'speaker'
+        text_data, style_data, speaker_data, f0_data = transform_mellotron_input_data(
+            dataloader=dataloader, text=text, speaker=speaker, audio=audio, device=_device)
 
         mels, mels_postnet, gates, alignments = mellotron.generate_mel(text_data, style_data, speaker_data, f0_data)
 
-        wavs = waveglow.generate_wave(mel=mels)
+        wavs = waveglow.generate_wave(mel=mels, **waveglow_kwargs)
+
+        wav_output = wavs.squeeze().cpu().numpy()
+        aukit.save_wav(wav_output, os.path.join(tmpdir, 'demo_example.wav'), sr=args.sampling_rate)
+
+    print('Test success done.')
+
+    # 模型推理
+
+    if os.path.isfile(texts_path):
+        text_inputs = [w.strip() for w in open(texts_path, encoding='utf8')]
+        if args.is_simple:
+            text_inputs = np.random.choice(text_inputs, min(len(text_inputs), 10), replace=False)
+    else:
+        text_inputs = [texts_path]
+
+    Path(output_dir).mkdir(exist_ok=True, parents=True)
+
+    audio_lst, text_lst, speaker_lst = [], [], []
+    for text_input in tqdm(text_inputs, 'TTS', ncols=100):
+        # print('Running: {}'.format(text_input))
+        audio, text, speaker = text_input.split('\t')
+        audio_lst.append(audio)
+        text_lst.append(text)
+        speaker_lst.append(speaker)
+
+    np.random.shuffle(audio_lst)
+    np.random.shuffle(text_lst)
+    np.random.shuffle(speaker_lst)
+
+    for text_input in tqdm(zip(audio_lst, text_lst, speaker_lst), 'TTS', total=len(audio_lst), ncols=100):
+        # for text_input in tqdm(text_inputs, 'TTS', ncols=100):
+        # print('Running: {}'.format(text_input))
+        audio, text, speaker = text_input  # .split('\t')
+        text_data, style_data, speaker_data, f0_data = transform_mellotron_input_data(
+            dataloader=dataloader, text=text, speaker=speaker, audio=audio, device=_device)
+
+        mels, mels_postnet, gates, alignments = mellotron.generate_mel(text_data, style_data, speaker_data, f0_data)
+
+        wavs = waveglow.generate_wave(mel=mels, **waveglow_kwargs)
 
         # 保存数据
-        cur_text = filename_formatter_re.sub('', unidecode.unidecode(text_input[:4]))
+        cur_text = filename_formatter_re.sub('', unidecode.unidecode(text))[:15]
         cur_time = time.strftime('%Y%m%d-%H%M%S')
         outpath = os.path.join(output_dir, "demo_{}_{}_out.wav".format(cur_time, cur_text))
 
         wav_output = wavs.squeeze(0).cpu().numpy()
         aukit.save_wav(wav_output, outpath, sr=args.sampling_rate)
+
+        if isinstance(audio, (Path, str)) and Path(audio).is_file():
+            refpath = os.path.join(output_dir, "demo_{}_{}_ref.wav".format(cur_time, cur_text))
+            shutil.copyfile(audio, refpath)
 
         fig_path = os.path.join(output_dir, "demo_{}_{}_fig.jpg".format(cur_time, cur_text))
 
@@ -238,7 +299,4 @@ if __name__ == "__main__":
 
         log_path = os.path.join(output_dir, "info_dict.txt".format(cur_time))
         with open(log_path, 'at', encoding='utf8') as fout:
-            dt = {k: (str(v) if isinstance(v, Path) else v) for k, v in locals().items()
-                  if isinstance(v, (int, float, str, Path, bool))}
-            out = json.dumps(dt, ensure_ascii=False)
-            fout.write('{}\n'.format(out))
+            fout.write('{}\n'.format(json.dumps(info_dict, ensure_ascii=False)))
