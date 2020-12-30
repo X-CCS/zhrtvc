@@ -19,6 +19,9 @@ v1.3.2
 
 zhrtvc项目默认参数设置是适用于样本数据samples的，仅用于跑通整个流程。
 
+推荐使用mellotron的语音合成器和waveglow的声码器，mellotron设置多种模式适应多种任务使用。
+
+
 + **原始语音和克隆语音对比样例**
 
 链接: https://pan.baidu.com/s/1TQwgzEIxD2VBrVZKCblN1g 
@@ -65,18 +68,7 @@ name: ge2e_pretrained_iwater.pt
 
 + **合成样例**
 
-[aliaudio-Aibao-004113.wav](data/files/aliaudio-Aibao-004113.wav)
-
-[aliaudio-Aimei-007261.wav](data/files/aliaudio-Aimei-007261.wav)
-
-[aliaudio-Aina-000819.wav](data/files/aliaudio-Aina-000819.wav)
-
-[aliaudio-Aiqi-009619.wav](data/files/aliaudio-Aiqi-009619.wav)
-
-[aliaudio-Aitong-003149.wav](data/files/aliaudio-Aitong-003149.wav)
-
-[aliaudio-Aiwei-009461.wav](data/files/aliaudio-Aiwei-009461.wav)
-
+[合成语音样例的目录](data/files/examples)
 
 + **注意**
 
