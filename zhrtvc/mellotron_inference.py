@@ -18,7 +18,7 @@ import os
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--checkpoint_path', type=str,
-                        default=r"../models/mellotron/samples/checkpoint/checkpoint-000000.pt",
+                        default=r"../models/mellotron/samples/checkpoint/mellotron-000000.pt",
                         help='模型路径。')
     parser.add_argument('--is_simple', type=int, default=1,
                         help='是否简易模式。')
@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument('-t', '--text_path', type=str,
                         default=r"../models/mellotron/samples/metadata/validation.txt",
                         help='文本路径。')
-    parser.add_argument("-o", "--out_dir", type=Path, default=r"../models/mellotron/samples/test/000000",
+    parser.add_argument("-o", "--out_dir", type=Path, default=r"../models/mellotron/samples/test/mellotron-000000",
                         help='保存合成的数据路径。')
     parser.add_argument("-p", "--play", type=int, default=0,
                         help='是否合成语音后自动播放语音。')
@@ -44,7 +44,7 @@ def parse_args():
                         default=r"../models/encoder/saved_models/ge2e_pretrained.pt",
                         help="Path your trained encoder model.")
     parser.add_argument("--save_model_path", type=str,
-                        default=r"../models/mellotron/samples/mellotron-samples-000000.pt",
+                        default=r"../models/mellotron/samples/mellotron-000000.samples.pt",
                         help='保存模型为可以直接torch.load的格式')
     parser.add_argument("--cuda", type=str, default='-1',
                         help='设置CUDA_VISIBLE_DEVICES')

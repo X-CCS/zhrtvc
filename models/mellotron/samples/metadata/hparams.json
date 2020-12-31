@@ -1,5 +1,5 @@
 {
-    "dataloader_num_workers": 2,
+    "dataloader_num_workers": 0,
     "epochs": 1000000,
     "iters_per_checkpoint": 100,
     "seed": 1234,
@@ -15,7 +15,7 @@
     ],
     "train_mode": "train-mspk",
     "encoder_model_fpath": "../models/encoder/saved_models/ge2e_pretrained.pt",
-    "text_cleaners": "biaobei",
+    "text_cleaners": "hanzi",
     "p_arpabet": 1.0,
     "cmudict_path": null,
     "max_wav_value": 32768.0,

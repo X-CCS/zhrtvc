@@ -10,11 +10,11 @@
     "meta_folder": "../models/mellotron/samples\\metadata",
     "trpath": "../models/mellotron/samples\\metadata\\train.txt",
     "vapath": "../models/mellotron/samples\\metadata\\validation.txt",
-    "num": 19,
-    "line": "wav/000020.wav\t霍思燕露背秀乳沟性感惹火。\tbiaobei\n",
-    "abspath": "E:/github-kuangdd/zhrtvc/data/samples/wav/000020.wav",
+    "num": 49,
+    "line": "biaobei/wav/000020.wav\t霍思燕露背秀乳沟性感惹火。\tbiaobei\n",
+    "abspath": "E:/github-kuangdd/zhrtvc/data/samples/biaobei/wav/000020.wav",
     "text": "霍思燕露背秀乳沟性感惹火。",
     "speaker": "biaobei",
-    "out": "E:/github-kuangdd/zhrtvc/data/samples/wav/000020.wav\t霍思燕露背秀乳沟性感惹火。\tbiaobei\n",
+    "out": "E:/github-kuangdd/zhrtvc/data/samples/biaobei/wav/000020.wav\t霍思燕露背秀乳沟性感惹火。\tbiaobei\n",
     "stem_path": "../models/mellotron/samples\\metadata\\locals"
 }

@@ -6,7 +6,7 @@ batch_size: 4
 cmudict_path: null
 cudnn_benchmark: false
 cudnn_enabled: true
-dataloader_num_workers: 2
+dataloader_num_workers: 0
 decoder_rnn_dim: 512
 dist_backend: nccl
 dist_url: tcp://localhost:54321
@@ -75,7 +75,7 @@ sampling_rate: 22050
 seed: 1234
 speaker_embedding_dim: 32
 symbols_embedding_dim: 256
-text_cleaners: biaobei
+text_cleaners: hanzi
 token_embedding_size: 0
 token_num: 10
 train_mode: train-mspk

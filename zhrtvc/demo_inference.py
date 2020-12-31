@@ -24,14 +24,11 @@ logger = logging.getLogger(Path(__name__).stem)
 def parse_args():
     parser = argparse.ArgumentParser(description='声音编码器、语音合成器和声码器推理')
     parser.add_argument('--mellotron_path', type=str,
-                        default=r"../models/mellotron/samples/mellotron-samples-000000.pt",
-                        # '../models/mellotron/mellotron_samples_model.pt'
+                        default=r"../models/mellotron/samples/mellotron-000000.samples.pt",
                         help='Mellotron model file path')
-    parser.add_argument('--melgan_path', type=str, default='', help='MelGAN model file path')
-    parser.add_argument('--waveglow_path', type=str, default='../models/waveglow/samples/waveglow-000000.model.pt',
+    parser.add_argument('--waveglow_path', type=str, default='../models/waveglow/samples/waveglow-000000.samples.pt',
                         help='WaveGlow model file path')
     parser.add_argument('--mellotron_hparams', type=str, default=r"../models/mellotron/samples/metadata/hparams.json",
-                        # '../models/mellotron/mellotron_samples_model.pt'
                         help='Mellotron hparams json file path')
     parser.add_argument('--is_simple', type=int, default=1,
                         help='是否简易模式。')
@@ -41,7 +38,8 @@ def parse_args():
     parser.add_argument('--sampling_rate', type=int, default=22050, help='Input file path or text')
     parser.add_argument('--input', type=str, default=r"../models/mellotron/samples/metadata/validation.txt",
                         help='Input file path or text')
-    parser.add_argument('--output', type=str, default=r"../models/mellotron/samples/test/000000",
+    parser.add_argument('--output', type=str,
+                        default=r"../models/mellotron/samples/test/mellotron-000000.samples.waveglow-000000.samples",
                         help='Output file path or dir')
     parser.add_argument("--cuda", type=str, default='0', help='Set CUDA_VISIBLE_DEVICES')
     args = parser.parse_args()
@@ -133,8 +131,6 @@ def plot_mel_alignment_gate_audio(mel, alignment, gate, audio, figsize=(16, 16))
 def load_models(args):
     if args.waveglow_path:
         waveglow.load_waveglow_torch(args.waveglow_path)
-    if args.melgan_path:
-        melgan.load_melgan_torch(args.melgan_path)
     if args.mellotron_path:
         mellotron.load_mellotron_torch(args.mellotron_path)
 
@@ -249,7 +245,7 @@ if __name__ == "__main__":
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     audio_lst, text_lst, speaker_lst = [], [], []
-    for text_input in tqdm(text_inputs, 'TTS', ncols=100):
+    for text_input in text_inputs:
         # print('Running: {}'.format(text_input))
         audio, text, speaker = text_input.split('\t')
         audio_lst.append(audio)

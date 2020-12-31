@@ -121,10 +121,32 @@ def speaker_embedding():
     print(out)
 
 
+def get_aishell_samples():
+    """
+    SSB00570415|fang4 yi4 shou3 % qing2 ge1 $|放一首%情歌$
+    Returns:
+
+    """
+    indir = Path(r'E:\data\aishell3\AISHELL-3\AISHELL-3\train')
+    txtpath = indir / 'label_train-set.txt'
+    wavdir = indir / 'wav'
+    idxdt = {w.split('|')[0]: w.strip() for w in open(txtpath) if not w.startswith('#')}
+    outdir = indir / 'samples'
+    outdir.mkdir(exist_ok=True)
+    out_wavdir = outdir / 'wav'
+    out_wavdir.mkdir(exist_ok=True)
+    with open(outdir.joinpath('metadata.csv'), 'wt', encoding='utf8') as fout:
+        for spkdir in tqdm(wavdir.glob('*')):
+            wavpath = np.random.choice(list(spkdir.glob('*.wav')))
+            shutil.copyfile(wavpath, out_wavdir.joinpath(wavpath.name))
+            fout.write(f'wav/{wavpath.name}\t{idxdt[wavpath.stem]}\t{spkdir.name}\n')
+
+
 if __name__ == "__main__":
     print(__file__)
     indir = Path(r"E:\lab\melgan\data\aliexamples")
     outdir = Path(r"E:\lab\melgan\data\aliexamples_mel")
+    get_aishell_samples()
     # outdir.mkdir(exist_ok=True)
     # wavs2mels(indir=indir, outdir=outdir)
 
@@ -136,4 +158,4 @@ if __name__ == "__main__":
     # print(out)
     #
     # biaobei2aishell3()
-    speaker_embedding()
+    # speaker_embedding()

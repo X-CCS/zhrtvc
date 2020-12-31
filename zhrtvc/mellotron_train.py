@@ -22,7 +22,7 @@ def parse_args():
     parser.add_argument('--group_name', type=str, default='group_name',
                         required=False, help='Distributed group name')
     parser.add_argument('--hparams_json', type=str,
-                        default='{"batch_size":4,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":2}',
+                        default='{"batch_size":4,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":0}',
                         required=False, help='comma separated name=value pairs')
     parser.add_argument('--hparams_level', type=int, default=2,
                         required=False, help='hparams scale')

@@ -7,7 +7,7 @@
     "n_gpus": 1,
     "rank": 0,
     "group_name": "group_name",
-    "hparams_json": "{\"batch_size\":4,\"iters_per_checkpoint\":100,\"learning_rate\":0.001,\"dataloader_num_workers\":2}",
+    "hparams_json": "{\"batch_size\":4,\"iters_per_checkpoint\":100,\"learning_rate\":0.001,\"dataloader_num_workers\":0}",
     "hparams_level": 2,
     "cuda": "0,1,2,3,4,5,6,7,8,9"
 }
