@@ -307,8 +307,8 @@ class TextMelLoader(torch.utils.data.Dataset):
 
         text = self.get_text(text)
 
-        audio, sampling_rate = load_wav_to_torch(audiopath, sr_force=self.stft.sampling_rate)
-        audio_norm = audio / self.max_wav_value
+        audio_norm, sampling_rate = load_wav_to_torch(audiopath, sr_force=self.stft.sampling_rate)
+        audio = audio_norm * self.max_wav_value
         if sampling_rate != self.stft.sampling_rate:
             raise ValueError("{} SR doesn't match target {} SR".format(
                 sampling_rate, self.stft.sampling_rate))
@@ -316,7 +316,7 @@ class TextMelLoader(torch.utils.data.Dataset):
         mel = self.get_mel(audio_norm)
 
         if self.hparams.prenet_f0_dim > 0:
-            f0 = self.get_f0(audio.cpu().numpy(), sampling_rate,
+            f0 = self.get_f0(audio.cpu().numpy().astype('int16'), sampling_rate,
                              self.filter_length, self.hop_length, self.f0_min,
                              self.f0_max, self.harm_thresh)
             f0 = torch.from_numpy(f0)[None]
@@ -389,8 +389,9 @@ class TextMelCollate():
     """ Zero-pads model inputs and targets based on number of frames per setep
     """
 
-    def __init__(self, n_frames_per_step):
+    def __init__(self, n_frames_per_step, mode='train'):
         self.n_frames_per_step = n_frames_per_step
+        self.train_mode = mode == 'train'
 
     def __call__(self, batch):
         """Collate's training batch from normalized text and mel-spectrogram
@@ -403,6 +404,11 @@ class TextMelCollate():
             torch.LongTensor([len(x[0]) for x in batch]),
             dim=0, descending=True)
         max_input_len = input_lengths[0]
+
+        # 推理模式不要排序
+        if not self.train_mode:
+            input_lengths = torch.LongTensor([len(x[0]) for x in batch])
+            ids_sorted_decreasing = list(range(len(batch)))
 
         text_padded = torch.LongTensor(len(batch), max_input_len)
         text_padded.zero_()
@@ -426,7 +432,10 @@ class TextMelCollate():
             num_speaker_ids = 0
 
         # include mel padded, gate padded and speaker ids
+        # mel频谱pad很小的负数才是静音，pad数字0是很大声的噪声
+        # 如果pad为很小的负数，训练不起来，原因未知
         mel_padded = torch.FloatTensor(len(batch), num_mels, max_target_len)
+        # mel_padded = torch.ones_like(mel_padded) * -10
         mel_padded.zero_()
         gate_padded = torch.FloatTensor(len(batch), max_target_len)
         gate_padded.zero_()
@@ -451,6 +460,9 @@ class TextMelCollate():
                 f0_padded[i, :, :f0.size(1)] = f0
             else:
                 f0_padded = f0
+
+        # fixme 为了推理能够用batch
+        input_lengths = torch.ones_like(input_lengths) * max_input_len
 
         model_inputs = (text_padded, input_lengths, mel_padded, gate_padded,
                         output_lengths, speaker_ids, f0_padded)

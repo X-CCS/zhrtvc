@@ -196,7 +196,7 @@ class Encoder(nn.Module):
         # pytorch tensor are not reversible, hence the conversion
         input_lengths = input_lengths.cpu().numpy()
         x = nn.utils.rnn.pack_padded_sequence(
-            x, input_lengths, batch_first=True)
+            x, input_lengths, batch_first=True, enforce_sorted=True)  # enforce_sorted=True
 
         self.lstm.flatten_parameters()
         outputs, _ = self.lstm(x)
@@ -512,10 +512,11 @@ class Decoder(nn.Module):
             alignments += [alignment]
 
             # 支持batch的推理
-            if torch.sigmoid(torch.min(gate_output.data)) > self.gate_threshold:
+            v_min = torch.sigmoid(torch.min(gate_output.data)).cpu().numpy()
+            if v_min > self.gate_threshold:
                 break
-            elif len(mel_outputs) == self.max_decoder_steps:
-                print("Warning! Reached max decoder steps")
+            elif len(mel_outputs) >= self.max_decoder_steps:
+                # print("Warning! Reached max decoder steps")
                 break
 
             decoder_input = mel_output
@@ -681,6 +682,76 @@ class Tacotron2(nn.Module):
 
         return self.parse_output(
             [mel_outputs, mel_outputs_postnet, gate_outputs, alignments])
+
+    def inference_nopad(self, inputs):
+        """
+        不用pad的语音合成推理。
+        有pad的batch模式语音合成推理容易出现合成错误问题，合成效果不稳定。
+        用batch模式合成且不用pad还没打通，这个暂用非batch的合成方式。
+        Args:
+            inputs:
+
+        Returns:
+
+        """
+        text_, style_input_, speaker_ids_, f0s_ = inputs
+        f0s_ = [f0s_ for w in range(len(text_))]
+        mel_outputs_lst, mel_outputs_postnet_lst, gate_outputs_lst, alignments_lst = [], [], [], []
+        for text, style_input, speaker_ids, f0s in zip(text_, style_input_, speaker_ids_, f0s_):
+            text = text[: torch.argmin(text) + 1]  # 去除pad的0
+            embedded_inputs = self.embedding(text.unsqueeze(0)).transpose(1, 2)
+            embedded_text = self.encoder.inference(embedded_inputs)
+            embedded_speakers = self.speaker_embedding(speaker_ids.unsqueeze(0))[:, None]
+            if hasattr(self, 'gst'):
+                if isinstance(style_input, int):
+                    query = torch.zeros(1, 1, self.gst.encoder.ref_enc_gru_size).to(_device)  # cuda()
+                    GST = torch.tanh(self.gst.stl.embed)
+                    key = GST[style_input].unsqueeze(0).expand(1, -1, -1)
+                    embedded_gst = self.gst.stl.attention(query, key)
+                else:
+                    embedded_gst = self.gst(style_input.unsqueeze(0))
+
+            embedded_speakers = embedded_speakers.repeat(1, embedded_text.size(1), 1)
+            if hasattr(self, 'gst'):
+                embedded_gst = embedded_gst.repeat(1, embedded_text.size(1), 1)
+                encoder_outputs = torch.cat(
+                    (embedded_text, embedded_gst, embedded_speakers), dim=2)
+            else:
+                encoder_outputs = torch.cat(
+                    (embedded_text, embedded_speakers), dim=2)
+
+            mel_outputs, gate_outputs, alignments = self.decoder.inference(
+                encoder_outputs, f0s)
+
+            mel_outputs_postnet = self.postnet(mel_outputs)
+            mel_outputs_postnet = mel_outputs + mel_outputs_postnet
+
+            mel_outputs_lst.append(mel_outputs)
+            mel_outputs_postnet_lst.append(mel_outputs_postnet)
+            gate_outputs_lst.append(gate_outputs)
+            alignments_lst.append(alignments)
+
+        maxlen = max([w.shape[2] for w in mel_outputs_postnet_lst])
+
+        # pad一个很小的负数才是静音
+        mel_outputs_postnet_lst = [torch.constant_pad_nd(w, (0, maxlen - w.shape[2]), -16) for w in
+                                   mel_outputs_postnet_lst]
+        mel_outputs_postnet = torch.cat(mel_outputs_postnet_lst, dim=0)
+
+        # pad一个很小的负数才是静音
+        mel_outputs_lst = [torch.constant_pad_nd(w, (0, maxlen - w.shape[2]), -16) for w in mel_outputs_lst]
+        mel_outputs = torch.cat(mel_outputs_lst, dim=0)
+
+        # pad数字1才是截断
+        gate_outputs_lst = [torch.constant_pad_nd(w, (0, 0, 0, maxlen - w.shape[1]), 1) for w in gate_outputs_lst]
+        gate_outputs = torch.cat(gate_outputs_lst, dim=0)
+
+        maxlen_text = max([w.shape[0] for w in text_])
+
+        alignments_lst = [torch.constant_pad_nd(w, (0, maxlen_text - w.shape[2], 0, maxlen - w.shape[1]), 0) for w in
+                          alignments_lst]
+        alignments = torch.cat(alignments_lst, dim=0)
+        return self.parse_output([mel_outputs, mel_outputs_postnet, gate_outputs, alignments])
 
     def inference_noattention(self, inputs):
         text, style_input, speaker_ids, f0s, attention_map = inputs

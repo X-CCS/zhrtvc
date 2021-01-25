@@ -71,8 +71,12 @@ def read(fpath, sr_force=None):
     wav, sr = librosa.load(fpath, sr=None)
     if (sr_force is not None) and (sr != sr_force):
         wav = librosa.resample(wav, orig_sr=sr, target_sr=sr_force)
-    out = np.clip(wav, -1, 1) * (2 ** 15 - 1)
-    return (sr_force or sr), out.astype(int)
+
+    # fixme 标准化，音量一致
+    wav = 0.9 * wav / max(np.max(np.abs(wav)), 0.01)
+    # out = np.clip(wav, -1, 1) * (2 ** 15 - 1)
+    # out = out.astype(int)
+    return (sr_force or sr), wav
 
 
 def get_mask_from_lengths(lengths):

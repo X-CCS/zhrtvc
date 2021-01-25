@@ -77,6 +77,9 @@ def load_wav_to_torch(full_path, sr_force=None):
     if (max(data) > 1) or (min(data) < -1):
         logger.info(
             'Wave max or min value out of -1 to 1. Max value is {} and min value is {}.'.format(max(data), min(data)))
+
+    # fixme 音量标准化
+    data = 0.9 * data / max(np.max(np.abs(data)), 0.01)
     return torch.from_numpy(data).float(), (sr_force or sampling_rate)
 
 

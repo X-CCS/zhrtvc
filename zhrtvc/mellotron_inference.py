@@ -18,7 +18,7 @@ import os
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--checkpoint_path', type=str,
-                        default=r"../models/mellotron/samples/checkpoint/mellotron-000000.pt",
+                        default=r"../models/mellotron/staialbb-rtvc/checkpoint/mellotron-400000.pt",
                         help='模型路径。')
     parser.add_argument('--is_simple', type=int, default=1,
                         help='是否简易模式。')
@@ -202,28 +202,34 @@ if __name__ == "__main__":
     #         if not audio.strip():
     #             audio = np.random.choice(example_fpaths)
     #         print('Audio: {}'.format(audio))
-    for num, (text, speaker, audio) in enumerate(tqdm(zip(example_text_list, example_speaker_list, example_audio_list),
-                                                      'mellotron-inference', ncols=100)):
+    # fixme batch的形式合成
+    mels, mels_postnet, gates, alignments = msyner.synthesize_batch()
+    texts = msyner.texts
+    for num in tqdm(list(range(len(mels_postnet))), 'griffinlim', ncols=100):
+    # for num, (text, speaker, audio) in enumerate(tqdm(zip(example_text_list, example_speaker_list, example_audio_list),
+    #                                                   'mellotron-inference', ncols=100)):
         try:
-            print(f'number: {num}')
-            print(f'text: {text}')
-            print(f'speaker: {speaker}')
-            print(f'audio： {audio}')
+            spec, align, gate = mels_postnet[num], alignments[num], gates[num]
+            audio, text, speaker = texts[num].split('\t')
+            # print(f'number: {num}')
+            # print(f'text: {text}')
+            # print(f'speaker: {speaker}')
+            # print(f'audio： {audio}')
             # The synthesizer works in batch, so you need to put your data in a list or numpy array
-            text_input, speaker_input, audio_input = str(text), str(speaker), str(audio)  # 为了能够放到locals
-            print("Creating the spectrogram ...")
-            spec, align, gate = msyner.synthesize(text=text, speaker=speaker, audio=audio, with_show=True)
+            # text_input, speaker_input, audio_input = str(text), str(speaker), str(audio)  # 为了能够放到locals
+            # print("Creating the spectrogram ...")
+            # spec, align, gate = msyner.synthesize(text=text, speaker=speaker, audio=audio, with_show=True)
 
-            print("Spectrogram shape: {}".format(spec.shape))
-            print("Alignment shape: {}".format(align.shape))
+            # print("Spectrogram shape: {}".format(spec.shape))
+            # print("Alignment shape: {}".format(align.shape))
 
             ## Generating the waveform
-            print("Synthesizing the waveform ...")
+            # print("Synthesizing the waveform ...")
 
-            wav_outputs = msyner.stft.griffin_lim(torch.from_numpy(spec[None]), n_iters=30)
+            wav_outputs = msyner.stft.griffin_lim(torch.from_numpy(spec[None]), n_iters=5)
             wav_output = wav_outputs[0].cpu().numpy()
 
-            print("Waveform shape: {}".format(wav.shape))
+            # print("Waveform shape: {}".format(wav.shape))
 
             # Save it on the disk
             cur_text = filename_formatter_re.sub('', unidecode.unidecode(text))[:15]
@@ -250,7 +256,7 @@ if __name__ == "__main__":
                 fout.write('{}\n'.format(json.dumps(info_dict, ensure_ascii=False)))
 
             num_generated += 1
-            print("\nSaved output as %s\n\n" % out_path)
+            # print("\nSaved output as %s\n\n" % out_path)
             if args.play:
                 aukit.play_audio(out_path, sr=msyner.stft.sampling_rate)
         except Exception as e:

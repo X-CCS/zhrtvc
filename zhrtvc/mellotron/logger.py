@@ -1,6 +1,7 @@
 import random
 import json
 import torch
+import numpy as np
 from tensorboardX import SummaryWriter
 
 from .plotting_utils import plot_alignment_to_numpy, plot_spectrogram_to_numpy
@@ -43,14 +44,19 @@ class Tacotron2Logger(SummaryWriter):
             "mel_predicted",
             plot_spectrogram_to_numpy(mel_outputs[idx].data.cpu().numpy()),
             iteration, dataformats='HWC')
+        gate_target = gate_targets[idx].data.cpu().numpy()
+        gate_output = torch.sigmoid(gate_outputs[idx]).data.cpu().numpy()
         self.add_image(
             "gate",
             plot_gate_outputs_to_numpy(
-                gate_targets[idx].data.cpu().numpy(),
-                torch.sigmoid(gate_outputs[idx]).data.cpu().numpy()),
+                gate_target,
+                gate_output),
             iteration, dataformats='HWC')
+
         # 记录一下合成的语音效果。
-        audio_predicted = self.stft.griffin_lim(mel_outputs[idx].unsqueeze(0))[0]
+        end_idx = np.argmax(gate_output > 0.5) or gate_output.shape[0]
+        mel = mel_outputs[idx][:, :end_idx].unsqueeze(0)
+        audio_predicted = self.stft.griffin_lim(mel)[0]
         self.add_audio(
             'audio_predicted',
             audio_predicted,
@@ -61,7 +67,9 @@ class Tacotron2Logger(SummaryWriter):
             plot_spectrogram_to_numpy(mel_targets[idx].data.cpu().numpy()),
             iteration, dataformats='HWC')
 
-        audio_target = self.stft.griffin_lim(mel_targets[idx].unsqueeze(0))[0]
+        end_idx = np.argmax(gate_target > 0.5) or gate_target.shape[0]
+        mel = mel_targets[idx][:, :end_idx].unsqueeze(0)
+        audio_target = self.stft.griffin_lim(mel)[0]
         self.add_audio(
             'audio_target',
             audio_target,

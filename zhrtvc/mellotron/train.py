@@ -9,6 +9,7 @@ import numpy as np
 import multiprocessing as mp
 import argparse
 import yaml
+import random
 
 from numpy import finfo
 from tqdm import tqdm
@@ -175,20 +176,29 @@ def validate(model, criterion, valset, iteration, batch_size, n_gpus,
             if outdir and save_flag:
                 curdir = outdir.joinpath('validation', f'{iteration:06d}-{loss.data.cpu().numpy():.4f}')
                 curdir.mkdir(exist_ok=True, parents=True)
+                idx = random.randint(0, alignments.size(0) - 1)
 
-                wav_outputs = valset.stft.griffin_lim(mel_outputs_postnet)
+                gate_output = gate_outputs[idx].data.cpu().numpy()
+                end_idx = np.argmax(gate_output > 0.5) or gate_output.shape[0]
+                mel = mel_outputs_postnet[idx][:, :end_idx].unsqueeze(0)
+                wav_outputs = valset.stft.griffin_lim(mel)
                 wav_output = wav_outputs[0].cpu().numpy()
                 aukit.save_wav(wav_output, curdir.joinpath('griffinlim_pred.wav'), sr=hparams.sampling_rate)
 
-                wav_inputs = valset.stft.griffin_lim(y[0])
+                mel_targets = y[0]
+                gate_targets = y[1]
+                gate_target = gate_targets[idx].data.cpu().numpy()
+                end_idx = np.argmax(gate_target > 0.5) or gate_target.shape[0]
+                mel = mel_targets[idx][:, :end_idx].unsqueeze(0)
+                wav_inputs = valset.stft.griffin_lim(mel)
                 wav_input = wav_inputs[0].cpu().numpy()
                 aukit.save_wav(wav_input, curdir.joinpath('griffinlim_true.wav'), sr=hparams.sampling_rate)
 
-                plot_mel_alignment_gate_audio(target=y[0][0].cpu().numpy(),
-                                              mel=mel_outputs[0].cpu().numpy(),
-                                              alignment=alignments[0].cpu().numpy().T,
-                                              gate=torch.sigmoid(gate_outputs[0]).cpu().numpy(),
-                                              audio=wav_output[::hparams.sampling_rate // 1000])
+                plot_mel_alignment_gate_audio(target=mel_targets[idx].cpu().numpy(),
+                                              mel=mel_outputs[idx].cpu().numpy(),
+                                              alignment=alignments[idx].cpu().numpy().T,
+                                              gate=torch.sigmoid(gate_outputs[idx]).cpu().numpy(),
+                                              audio=wav_output[::hparams.sampling_rate // 100])
                 plt.savefig(curdir.joinpath('figure.png'))
                 plt.close()
 

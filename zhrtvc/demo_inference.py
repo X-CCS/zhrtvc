@@ -24,9 +24,9 @@ logger = logging.getLogger(Path(__name__).stem)
 def parse_args():
     parser = argparse.ArgumentParser(description='声音编码器、语音合成器和声码器推理')
     parser.add_argument('--mellotron_path', type=str,
-                        default=r"../models/mellotron/samples/mellotron-000000.samples.pt",
+                        default=r"../models/mellotron/staialbb-rtvc/mellotron-400000.staialbb-rtvc.pt",
                         help='Mellotron model file path')
-    parser.add_argument('--waveglow_path', type=str, default='../models/waveglow/samples/waveglow-000000.samples.pt',
+    parser.add_argument('--waveglow_path', type=str, default='../models/waveglow/aishell3/waveglow-1700000.aishell3.pt',
                         help='WaveGlow model file path')
     parser.add_argument('--mellotron_hparams', type=str, default=r"../models/mellotron/samples/metadata/hparams.json",
                         help='Mellotron hparams json file path')
@@ -70,6 +70,7 @@ import phkit
 import aukit
 import unidecode
 import yaml
+import librosa
 
 from waveglow import inference as waveglow
 from melgan import inference as melgan
@@ -144,6 +145,7 @@ def transform_mellotron_input_data(dataloader, text, speaker='', audio='', devic
     style_data = 0
     speaker_data = speaker_data.to(device)
     f0_data = f0_data
+    mel_data = mel_data[None].to(device)
 
     # text_data = torch.LongTensor(phkit.chinese_text_to_sequence(text, cleaner_names='hanzi'))[None, :].to(device)
     # style_data = 0
@@ -153,7 +155,7 @@ def transform_mellotron_input_data(dataloader, text, speaker='', audio='', devic
     # speaker_data = torch.FloatTensor(out).to(device)
     # # speaker_data = torch.zeros([1], dtype=torch.long).to(device)
     # f0_data = None
-    return text_data, style_data, speaker_data, f0_data
+    return text_data, style_data, speaker_data, f0_data, mel_data
 
 
 def hello():
@@ -212,7 +214,6 @@ if __name__ == "__main__":
     mellotron_hparams = mellotron.create_hparams(open(mellotron_hparams_path, encoding='utf8').read())
     dataloader = mellotron.TextMelLoader(audiopaths_and_text='', hparams=mellotron_hparams, speaker_ids=None,
                                          mode='test')
-
     waveglow_kwargs = json.loads(args.waveglow_kwargs)
     # 模型测试
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -221,12 +222,12 @@ if __name__ == "__main__":
 
         text = '这是个试水的例子。'
         speaker = 'speaker'
-        text_data, style_data, speaker_data, f0_data = transform_mellotron_input_data(
+        text_data, style_data, speaker_data, f0_data, mel_data = transform_mellotron_input_data(
             dataloader=dataloader, text=text, speaker=speaker, audio=audio, device=_device)
 
         mels, mels_postnet, gates, alignments = mellotron.generate_mel(text_data, style_data, speaker_data, f0_data)
 
-        wavs = waveglow.generate_wave(mel=mels, **waveglow_kwargs)
+        wavs = waveglow.generate_wave(mel=mels_postnet, **waveglow_kwargs)
 
         wav_output = wavs.squeeze().cpu().numpy()
         aukit.save_wav(wav_output, os.path.join(tmpdir, 'demo_example.wav'), sr=args.sampling_rate)
@@ -252,20 +253,20 @@ if __name__ == "__main__":
         text_lst.append(text)
         speaker_lst.append(speaker)
 
-    np.random.shuffle(audio_lst)
-    np.random.shuffle(text_lst)
-    np.random.shuffle(speaker_lst)
+    # np.random.shuffle(audio_lst)
+    # np.random.shuffle(text_lst)
+    # np.random.shuffle(speaker_lst)
 
     for text_input in tqdm(zip(audio_lst, text_lst, speaker_lst), 'TTS', total=len(audio_lst), ncols=100):
         # for text_input in tqdm(text_inputs, 'TTS', ncols=100):
         # print('Running: {}'.format(text_input))
         audio, text, speaker = text_input  # .split('\t')
-        text_data, style_data, speaker_data, f0_data = transform_mellotron_input_data(
+        text_data, style_data, speaker_data, f0_data, mel_data = transform_mellotron_input_data(
             dataloader=dataloader, text=text, speaker=speaker, audio=audio, device=_device)
 
         mels, mels_postnet, gates, alignments = mellotron.generate_mel(text_data, style_data, speaker_data, f0_data)
 
-        wavs = waveglow.generate_wave(mel=mels, **waveglow_kwargs)
+        wavs = waveglow.generate_wave(mel=mels_postnet, **waveglow_kwargs)
 
         # 保存数据
         cur_text = filename_formatter_re.sub('', unidecode.unidecode(text))[:15]
@@ -276,8 +277,21 @@ if __name__ == "__main__":
         aukit.save_wav(wav_output, outpath, sr=args.sampling_rate)
 
         if isinstance(audio, (Path, str)) and Path(audio).is_file():
-            refpath = os.path.join(output_dir, "demo_{}_{}_ref.wav".format(cur_time, cur_text))
-            shutil.copyfile(audio, refpath)
+            # 原声
+            refpath_raw = os.path.join(output_dir, "demo_{}_{}_ref_copy.wav".format(cur_time, cur_text))
+            shutil.copyfile(audio, refpath_raw)
+
+            # 重采样
+            wav_input, sr = aukit.load_wav(audio, with_sr=True)
+            wav_input = librosa.resample(wav_input, sr, args.sampling_rate)
+            refpath = os.path.join(output_dir, "demo_{}_{}_ref_resample.wav".format(cur_time, cur_text))
+            aukit.save_wav(wav_input, refpath, sr=args.sampling_rate)
+
+            # 声码器
+            wavs_ref = waveglow.generate_wave(mel=mel_data, **waveglow_kwargs)
+            outpath_ref = os.path.join(output_dir, "demo_{}_{}_ref_waveglow.wav".format(cur_time, cur_text))
+            wav_output_ref = wavs_ref.squeeze(0).cpu().numpy()
+            aukit.save_wav(wav_output_ref, outpath_ref, sr=args.sampling_rate)
 
         fig_path = os.path.join(output_dir, "demo_{}_{}_fig.jpg".format(cur_time, cur_text))
 

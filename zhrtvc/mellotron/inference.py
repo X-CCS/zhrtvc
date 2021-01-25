@@ -15,12 +15,18 @@ import torch
 import numpy as np
 import librosa
 import yaml
+from tqdm import tqdm
+import aukit
+import torch
+import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
 
 from .model import Tacotron2, load_model
 from .hparams import create_hparams, Dict2Obj
 from .data_utils import transform_mel, transform_text, transform_f0, transform_embed, transform_speaker
-from .data_utils import TextMelLoader
 from .layers import TacotronSTFT
+from .data_utils import TextMelLoader, TextMelCollate
+from .plotting_utils import plot_mel_alignment_gate_audio
 
 _model = None
 _device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -78,6 +84,50 @@ def generate_mel(text, style, speaker, f0, **kwargs):
         return mels, mels_postnet, gates, alignments
 
 
+def generate_mel_batch(model, inpath, batch_size, hparams, **kwargs):
+    """Handles all the validation scoring and printing"""
+    # global _model
+    # if not is_loaded():
+    #     load_mellotron_torch(**kwargs)
+
+    model.eval()
+    with torch.no_grad():
+        valset = TextMelLoader(inpath, hparams, speaker_ids={}, mode=hparams.train_mode)
+        collate_fn = TextMelCollate(n_frames_per_step=hparams.n_frames_per_step, mode='val')
+        val_loader = DataLoader(valset, sampler=None, num_workers=1,
+                                shuffle=False, batch_size=batch_size,
+                                pin_memory=False, drop_last=False, collate_fn=collate_fn)
+        mels, mels_postnet, gates, alignments = [], [], [], []
+        for i, batch in enumerate(tqdm(val_loader, 'mellotron', ncols=100)):
+            x, y = model.parse_batch(batch)  # y: 2部分
+            y_pred = model.inference((x[0], x[2], x[5], x[6]))
+
+            mel_outputs, mel_outputs_postnet, gate_outputs, alignment_outputs = y_pred
+
+            # wav_outputs = valset.stft.griffin_lim(mel_outputs_postnet, n_iters=5, denoiser_strength=0)
+
+            out_mels = mel_outputs.data.cpu().numpy()
+            out_mels_postnet = mel_outputs_postnet.data.cpu().numpy()
+            out_aligns = alignment_outputs.data.cpu().numpy()
+            out_gates = torch.sigmoid(gate_outputs.data).cpu().numpy()
+            # out_wavs = wav_outputs.data.cpu().numpy()
+
+            for out_mel, out_mel_postnet, out_align, out_gate in zip(out_mels, out_mels_postnet, out_aligns, out_gates):
+                end_idx = np.argmax(out_gate > 0.5) or out_gate.shape[0]
+
+                out_mel = out_mel[:, :end_idx]
+                out_mel_postnet = out_mel_postnet[:, :end_idx]
+                out_align = out_align.T[:, :end_idx]
+                out_gate = out_gate[:end_idx]
+                # out_wav = out_wav[:end_idx * hparams.hop_length]
+
+                mels.append(out_mel)
+                mels_postnet.append(out_mel_postnet)
+                gates.append(out_gate)
+                alignments.append(out_align)
+        return mels, mels_postnet, gates, alignments
+
+
 class MellotronSynthesizer():
     def __init__(self, model_path, speakers_path, hparams_path, texts_path, device=_device):
         self.device = device
@@ -90,7 +140,7 @@ class MellotronSynthesizer():
 
         self.speakers = json.load(open(speakers_path, encoding='utf8'))
         self.texts = [w.strip() for w in open(texts_path, encoding='utf8')]
-
+        self.texts_path = texts_path
         self.stft = TacotronSTFT(
             self.hparams.filter_length, self.hparams.hop_length, self.hparams.win_length,
             self.hparams.n_mel_channels, self.hparams.sampling_rate, self.hparams.mel_fmin,
@@ -98,6 +148,8 @@ class MellotronSynthesizer():
 
         self.dataloader = TextMelLoader(audiopaths_and_text=texts_path, hparams=self.hparams, speaker_ids=self.speakers)
 
+    def synthesize_batch(self):
+        return generate_mel_batch(self.model, self.texts_path, 4, self.hparams)
 
     def synthesize(self, text, speaker, audio, with_show=False):
         text_data, mel_data, speaker_data, f0_data = self.dataloader.get_data_train_v2([audio, text, speaker])

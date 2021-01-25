@@ -37,6 +37,7 @@ args = parse_args()
 
 os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda
 
+import time
 import json
 from scipy.io import wavfile
 import shutil
@@ -86,7 +87,9 @@ def main(input_path, waveglow_path, config_path, output_path, save_model_path, i
     output_dir.mkdir(exist_ok=True, parents=True)
     for audio_path in tqdm(audio_path_lst, 'waveglow', ncols=100):
         audio_path = Path(audio_path)
-        outpath = output_dir.joinpath(audio_path.name)
+        cur_time = time.strftime('%Y%m%d-%H%M%S')
+        audio_name = f'waveglow_{cur_time}_{audio_path.name}'
+        outpath = output_dir.joinpath(audio_name)
         name_cnt = 2
         while outpath.is_file():
             outpath = output_dir.joinpath(f'{audio_path.stem}-{name_cnt}{audio_path.suffix}')
