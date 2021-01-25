@@ -1,8 +1,0 @@
-E:/github-kuangdd/zhrtvc/data/samples/aishell3/wav/SSB02410470.wav	西马庄学校	SSB0241
-E:/github-kuangdd/zhrtvc/data/samples/aishell3/wav/SSB02460212.wav	随着我国人口结构趋势性变化	SSB0246
-E:/github-kuangdd/zhrtvc/data/samples/aishell3/wav/SSB02610484.wav	哪个这么大的胆子	SSB0261
-E:/github-kuangdd/zhrtvc/data/samples/aishell3/wav/SSB02880065.wav	而在芜湖市繁昌县也有一名公交司机	SSB0288
-E:/github-kuangdd/zhrtvc/data/samples/biaobei/wav/000012.wav	南越昆仑山与西藏接壤。	biaobei
-E:/github-kuangdd/zhrtvc/data/samples/biaobei/wav/000016.wav	此外广本也将由少壮派掌管。	biaobei
-E:/github-kuangdd/zhrtvc/data/samples/biaobei/wav/000018.wav	眼眶宽阔而低矮，鼻短而宽。	biaobei
-E:/github-kuangdd/zhrtvc/data/samples/biaobei/wav/000019.wav	霞浦县牙城镇乌岐、瓦窑村水位猛涨。	biaobei
