@@ -142,11 +142,27 @@ def get_aishell_samples():
             fout.write(f'wav/{wavpath.name}\t{idxdt[wavpath.stem]}\t{spkdir.name}\n')
 
 
+def joint_audio(inpath, outpath):
+    """拼接语音为大语音，插入静音来拼接。"""
+    import pydub
+    sr = 22020
+    sil_dict = {'\\': 5, '、': 50, '，': 100, '；': 150, '：': 150, '。': 200, '！': 200, '？': 200}
+    sil_line = 400
+    out_aud = pydub.AudioSegment.empty()
+    for num, line in enumerate(tqdm(sorted(Path(inpath).glob('*.wav')), 'kwargs', ncols=100), 1):
+        audio_path = str(line)
+        aud = pydub.AudioSegment.from_file(audio_path)
+        sil = pydub.AudioSegment.silent(sil_dict.get('。。', sil_line), sr)
+        out_aud = out_aud + aud + sil
+    out_aud.export(outpath, format='wav')
+
+
 if __name__ == "__main__":
     print(__file__)
-    indir = Path(r"E:\lab\melgan\data\aliexamples")
-    outdir = Path(r"E:\lab\melgan\data\aliexamples_mel")
-    get_aishell_samples()
+    indir = Path(r"E:\github-kuangdd\zhrtvc\models\mellotron\staialbb-rtvc\test\kaichang")
+    outdir = Path(r"E:\github-kuangdd\zhrtvc\models\mellotron\staialbb-rtvc\test\kaichang.wav")
+    joint_audio(indir, outdir)
+    # get_aishell_samples()
     # outdir.mkdir(exist_ok=True)
     # wavs2mels(indir=indir, outdir=outdir)
 

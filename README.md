@@ -1,4 +1,4 @@
-![zhrtvc](zhrtvc.png "zhrtvc")
+![zhrtvc](data/files/zhrtvc.png "zhrtvc")
 
 # zhrtvc
 Chinese Real Time Voice Cloning
@@ -7,9 +7,12 @@ tips: 中文或汉语的语言缩写简称是**zh**。
 
 关注【**啊啦嘻哈**】微信公众号，回复一个字【**听**】，小萝莉有话对你说哦^v^
 
+![啊啦嘻哈](data/files/alaxiha.jpg "啊啦嘻哈")
+
+
 ### 版本
 
-v1.3.2
+v1.3.3
 
 使用说明和注意事项详见[readme](zhrtvc/README.md)
 
