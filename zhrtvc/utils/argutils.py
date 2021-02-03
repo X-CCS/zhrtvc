@@ -51,6 +51,8 @@ def locals2dict(src: dict, maxlen=255):
     for key, value in src.items():
         if isinstance(value, Path):
             outdt[key] = str(value)
+        if isinstance(value, str):
+            outdt[key] = value[:maxlen]
         elif type(value) in _type_priorities:
             outdt[key] = value
         else:

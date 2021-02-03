@@ -2,7 +2,7 @@ from pathlib import Path
 import logging
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(Path(__name__).stem)
+logger = logging.getLogger(Path(__file__).stem)
 
 import sys
 

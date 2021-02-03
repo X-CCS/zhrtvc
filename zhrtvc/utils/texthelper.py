@@ -9,7 +9,7 @@ from pathlib import Path
 import logging
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(Path(__name__).stem)
+logger = logging.getLogger(Path(__file__).stem)
 
 xinqing_texts = """生活岂能百般如意
 正因有了遗漏和缺憾

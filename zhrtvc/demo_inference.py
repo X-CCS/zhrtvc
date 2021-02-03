@@ -18,7 +18,7 @@ import os
 import hashlib
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(Path(__name__).stem)
+logger = logging.getLogger(Path(__file__).stem)
 
 
 def parse_args():
@@ -41,7 +41,7 @@ def parse_args():
     parser.add_argument('--output', type=str,
                         default=r"../models/mellotron/samples/test/mellotron-000000.samples.waveglow-000000.samples",
                         help='Output file path or dir')
-    parser.add_argument("--cuda", type=str, default='0', help='Set CUDA_VISIBLE_DEVICES')
+    parser.add_argument("--cuda", type=str, default='0,1,2,3', help='Set CUDA_VISIBLE_DEVICES')
     args = parser.parse_args()
     return args
 
@@ -52,8 +52,6 @@ os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda
 
 import re
 import json
-import shutil
-import collections as clt
 import functools
 import multiprocessing as mp
 import traceback
@@ -66,7 +64,6 @@ import pydub
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 import torch
-import phkit
 import aukit
 import unidecode
 import yaml
@@ -76,6 +73,18 @@ from waveglow import inference as waveglow
 from melgan import inference as melgan
 from mellotron import inference as mellotron
 from utils.argutils import locals2dict
+
+from mellotron.layers import TacotronSTFT
+from mellotron.hparams import create_hparams
+
+# 用griffinlim声码器
+_hparams = create_hparams()
+_stft = TacotronSTFT(
+    _hparams.filter_length, _hparams.hop_length, _hparams.win_length,
+    _hparams.n_mel_channels, _hparams.sampling_rate, _hparams.mel_fmin,
+    _hparams.mel_fmax)
+
+_use_waveglow = 0
 
 _device = 'cuda' if torch.cuda.is_available() else 'cpu'
 filename_formatter_re = re.compile(r'[\s\\/:*?"<>|\']+')
@@ -130,8 +139,11 @@ def plot_mel_alignment_gate_audio(mel, alignment, gate, audio, figsize=(16, 16))
 
 
 def load_models(args):
-    if args.waveglow_path:
+    global _use_waveglow
+    if args.waveglow_path and args.waveglow_path not in {'_', 'gf', 'griffinlim'}:
         waveglow.load_waveglow_torch(args.waveglow_path)
+        _use_waveglow = 1
+
     if args.mellotron_path:
         mellotron.load_mellotron_torch(args.mellotron_path)
 
@@ -227,10 +239,12 @@ if __name__ == "__main__":
 
         mels, mels_postnet, gates, alignments = mellotron.generate_mel(text_data, style_data, speaker_data, f0_data)
 
-        wavs = waveglow.generate_wave(mel=mels_postnet, **waveglow_kwargs)
-
-        wav_output = wavs.squeeze().cpu().numpy()
-        aukit.save_wav(wav_output, os.path.join(tmpdir, 'demo_example.wav'), sr=args.sampling_rate)
+        if _use_waveglow:
+            wavs = waveglow.generate_wave(mel=mels_postnet, **waveglow_kwargs)
+        else:
+            wavs = _stft.griffin_lim(mels_postnet)
+            wav_output = wavs.squeeze().cpu().numpy()
+            aukit.save_wav(wav_output, os.path.join(tmpdir, 'demo_example.wav'), sr=args.sampling_rate)
 
     print('Test success done.')
 
@@ -266,7 +280,14 @@ if __name__ == "__main__":
 
         mels, mels_postnet, gates, alignments = mellotron.generate_mel(text_data, style_data, speaker_data, f0_data)
 
-        wavs = waveglow.generate_wave(mel=mels_postnet, **waveglow_kwargs)
+        out_gate = gates.cpu().numpy()[0]
+        end_idx = np.argmax(out_gate > 0.2) or out_gate.shape[0]
+
+        mels_postnet = mels_postnet[:, :, :end_idx]
+        if _use_waveglow:
+            wavs = waveglow.generate_wave(mel=mels_postnet, **waveglow_kwargs)
+        else:
+            wavs = _stft.griffin_lim(mels_postnet, n_iters=5)
 
         # 保存数据
         cur_text = filename_formatter_re.sub('', unidecode.unidecode(text))[:15]
@@ -277,21 +298,21 @@ if __name__ == "__main__":
         aukit.save_wav(wav_output, outpath, sr=args.sampling_rate)
 
         if isinstance(audio, (Path, str)) and Path(audio).is_file():
-            # 原声
-            refpath_raw = os.path.join(output_dir, "demo_{}_{}_ref_copy.wav".format(cur_time, cur_text))
-            shutil.copyfile(audio, refpath_raw)
+            # # 原声
+            # refpath_raw = os.path.join(output_dir, "demo_{}_{}_ref_copy.wav".format(cur_time, cur_text))
+            # shutil.copyfile(audio, refpath_raw)
 
             # 重采样
             wav_input, sr = aukit.load_wav(audio, with_sr=True)
             wav_input = librosa.resample(wav_input, sr, args.sampling_rate)
-            refpath = os.path.join(output_dir, "demo_{}_{}_ref_resample.wav".format(cur_time, cur_text))
+            refpath = os.path.join(output_dir, "demo_{}_{}_ref.wav".format(cur_time, cur_text))
             aukit.save_wav(wav_input, refpath, sr=args.sampling_rate)
 
-            # 声码器
-            wavs_ref = waveglow.generate_wave(mel=mel_data, **waveglow_kwargs)
-            outpath_ref = os.path.join(output_dir, "demo_{}_{}_ref_waveglow.wav".format(cur_time, cur_text))
-            wav_output_ref = wavs_ref.squeeze(0).cpu().numpy()
-            aukit.save_wav(wav_output_ref, outpath_ref, sr=args.sampling_rate)
+            # # 声码器
+            # wavs_ref = waveglow.generate_wave(mel=mel_data, **waveglow_kwargs)
+            # outpath_ref = os.path.join(output_dir, "demo_{}_{}_ref_waveglow.wav".format(cur_time, cur_text))
+            # wav_output_ref = wavs_ref.squeeze(0).cpu().numpy()
+            # aukit.save_wav(wav_output_ref, outpath_ref, sr=args.sampling_rate)
 
         fig_path = os.path.join(output_dir, "demo_{}_{}_fig.jpg".format(cur_time, cur_text))
 
@@ -305,7 +326,7 @@ if __name__ == "__main__":
         yml_path = os.path.join(output_dir, "demo_{}_{}_info.yml".format(cur_time, cur_text))
         info_dict = locals2dict(locals())
         with open(yml_path, 'wt', encoding='utf8') as fout:
-            yaml.dump(info_dict, fout, default_flow_style=False, encoding='utf-8', allow_unicode=True)
+            yaml.dump(info_dict, fout, encoding='utf-8', allow_unicode=True)
 
         log_path = os.path.join(output_dir, "info_dict.txt".format(cur_time))
         with open(log_path, 'at', encoding='utf8') as fout:

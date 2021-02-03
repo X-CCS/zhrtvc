@@ -46,6 +46,7 @@ from torch.utils.data import DataLoader
 from .glow import WaveGlow, WaveGlowLoss
 from .mel2samp import Mel2Samp
 
+_device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 def plot_spectrogram_to_numpy(spectrogram):
     fig, ax = plt.subplots(figsize=(12, 3))
@@ -107,7 +108,7 @@ def load_checkpoint(checkpoint_path, model, optimizer):
 def save_checkpoint(model, optimizer, learning_rate, iteration, filepath, waveglow_config):
     print("Saving model and optimizer state at iteration {} to {}".format(
         iteration, filepath))
-    model_for_saving = WaveGlow(**waveglow_config).cuda()
+    model_for_saving = WaveGlow(**waveglow_config).to(_device)
     model_for_saving.load_state_dict(model.state_dict())
     torch.save({'model': model_for_saving,
                 'iteration': iteration,
@@ -126,7 +127,7 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
     # =====END:   ADDED FOR DISTRIBUTED======
 
     criterion = WaveGlowLoss(sigma)
-    model = WaveGlow(**waveglow_config).cuda()
+    model = WaveGlow(**waveglow_config).to(_device)
 
     # =====START: ADDED FOR DISTRIBUTED======
     if num_gpus > 1:
@@ -184,8 +185,8 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
             model.zero_grad()
 
             mel, audio = batch
-            mel = torch.autograd.Variable(mel.cuda())
-            audio = torch.autograd.Variable(audio.cuda())
+            mel = torch.autograd.Variable(mel.to(_device))
+            audio = torch.autograd.Variable(audio.to(_device))
             outputs = model((mel, audio))
 
             loss = criterion(outputs)
