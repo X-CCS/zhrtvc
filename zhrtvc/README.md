@@ -46,7 +46,9 @@ python makefile.py [requirement.txt的路径]
 
 ### 语音合成器mellotron
 
-1. 处理语料，生成用于训练mellotron的数据。
+#### 1. 处理语料。
+
+生成用于训练mellotron的数据。
 
 - **语料格式**
 
@@ -79,7 +81,7 @@ aishell/S0093/BAC009S0093W0368.mp3  有 着 对 美 和 品质 感 执着 的 �
 
 文本可以是汉字、拼音，汉字可以是分词后的汉字序列。
 
-2. 训练mellotron模型，用处理好的数据训练mellotron的模型。
+#### 2. 训练mellotron模型，用处理好的数据训练mellotron的模型。
 
 ```
 执行：
@@ -122,7 +124,7 @@ optional arguments:
 如果多个数据一起用，可以用绝对路径表示，汇总到一个metadata.csv文件，便于训练。
 
 
-2. 应用mellotron模型
+#### 3. 应用mellotron模型
 
 ```markdown
 执行：
@@ -166,13 +168,15 @@ optional arguments:
 
 ### 语音合成器waveglow
 
-1. 处理语料，生成用于训练waveglow的数据。
+#### 1. 处理语料。
+
+生成用于训练waveglow的数据。
 
 方法同处理mellotron的数据方法。
 
 因为训练声码器只需要音频即可，不需要文本和发音人的标注，故可以任意指定文本和发音人，格式如训练mellotron的数据格式即可。
 
-2. 训练waveglow模型。
+#### 2. 训练waveglow模型。
 
 ```
 执行：
@@ -193,7 +197,7 @@ optional arguments:
 
 ```
 
-3. 应用waveglow模型。
+#### 3. 应用waveglow模型。
 ```
 执行：
 python waveglow_inference.py
