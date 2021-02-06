@@ -81,7 +81,9 @@ aishell/S0093/BAC009S0093W0368.mp3  有 着 对 美 和 品质 感 执着 的 �
 
 文本可以是汉字、拼音，汉字可以是分词后的汉字序列。
 
-#### 2. 训练mellotron模型，用处理好的数据训练mellotron的模型。
+#### 2. 训练mellotron模型。
+
+用处理好的数据训练mellotron的模型。
 
 ```
 执行：
@@ -124,7 +126,7 @@ optional arguments:
 如果多个数据一起用，可以用绝对路径表示，汇总到一个metadata.csv文件，便于训练。
 
 
-#### 3. 应用mellotron模型
+#### 3. 应用mellotron模型。
 
 ```markdown
 执行：
