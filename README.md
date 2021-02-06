@@ -14,19 +14,19 @@ tips: 中文或汉语的语言缩写简称是**zh**。
 
 v1.2.6
 
-使用说明和注意事项详见[readme](zhrtvc/README.md)
+使用说明和注意事项详见[README](zhrtvc/README.md)
 
-+ **tips**: 
++ **注意事项**: 
 
-这个说明是新版GMW版本的语音克隆框架的说明，使用ge2e(encoder)-mellotron-waveglow的模块（简称GMW），运行更简单，效果更稳定和合成语音更加优质。
+    - 这个说明是新版**GMW版本**的语音克隆框架的说明，使用ge2e(encoder)-mellotron-waveglow的模块（简称GMW），运行更简单，效果更稳定和合成语音更加优质。
 
-基于项目Real-Time-Voice-Cloning改造为中文支持的版本ESV版本的说明见[readme](README-ESV.md)，该版本用encoder-synthesizer-vocoder的模块（简称ESV），运行比较复杂。
+    - 基于项目Real-Time-Voice-Cloning改造为中文支持的版本ESV版本的说明见[README-ESV](README-ESV.md)，该版本用encoder-synthesizer-vocoder的模块（简称ESV），运行比较复杂。
 
-需要进入zhrtvc项目的代码子目录【[zhrtvc](zhrtvc)】运行代码。
+    - 需要进入zhrtvc项目的代码子目录【[zhrtvc](zhrtvc)】运行代码。
 
-zhrtvc项目默认参数设置是适用于样本数据samples的，仅用于跑通整个流程。
+    - zhrtvc项目默认参数设置是适用于data目录中的样本数据，仅用于跑通整个流程。
 
-推荐使用mellotron的语音合成器和waveglow的声码器，mellotron设置多种模式适应多种任务使用。
+    - 推荐使用mellotron的语音合成器和waveglow的声码器，mellotron设置多种模式适应多种任务使用。
 
 
 + **中文语料**
@@ -35,7 +35,7 @@ zhrtvc项目默认参数设置是适用于样本数据samples的，仅用于跑�
 
 + **中文模型**
 
-扫描上面的【啊啦嘻哈】微信公众号二维码，回复：**中文语音克隆模型走起**，获取百度网盘的模型文件。
+扫描上面的**【啊啦嘻哈】微信公众号二维码**，回复：**中文语音克隆模型走起**，获取百度网盘的模型文件。
 
 + **合成样例**
 
@@ -54,7 +54,11 @@ zhrtvc项目默认参数设置是适用于样本数据samples的，仅用于跑�
 #### data
 语料样例，包括语音和文本对齐语料。
 
-**注意：** 该语料样例用于测试跑通模型，数据量太少，不可能使得模型收敛，即不会训练出可用模型。在测试跑通模型情况下，处理自己的数据为语料样例的格式，用自己的数据训练模型即可。
+**注意：** 
+
+该语料样例用于测试跑通模型，数据量太少，不可能使得模型收敛，即不会训练出可用模型。
+
+在测试跑通模型情况下，处理自己的数据为语料样例的格式，用自己的数据训练模型即可。
 
 
 ### 学习交流
