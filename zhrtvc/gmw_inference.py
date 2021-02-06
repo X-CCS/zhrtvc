@@ -15,7 +15,6 @@ from pathlib import Path
 import logging
 import argparse
 import os
-import hashlib
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(Path(__file__).stem)
@@ -24,9 +23,9 @@ logger = logging.getLogger(Path(__file__).stem)
 def parse_args():
     parser = argparse.ArgumentParser(description='声音编码器、语音合成器和声码器推理')
     parser.add_argument('--mellotron_path', type=str,
-                        default=r"../models/mellotron/staialbb-rtvc/mellotron-400000.staialbb-rtvc.pt",
+                        default=r"../models/mellotron/kuangdd-rtvc/mellotron.kuangdd-rtvc.pt",
                         help='Mellotron model file path')
-    parser.add_argument('--waveglow_path', type=str, default='../models/waveglow/aishell3/waveglow-1700000.aishell3.pt',
+    parser.add_argument('--waveglow_path', type=str, default='../models/waveglow/kuangdd/waveglow.kuangdd.pt',
                         help='WaveGlow model file path')
     parser.add_argument('--mellotron_hparams', type=str, default=r"../models/mellotron/samples/metadata/hparams.json",
                         help='Mellotron hparams json file path')

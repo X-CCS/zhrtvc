@@ -1,0 +1,557 @@
+## zhrtvc
+
+### __init__
+
+
+### demo_cli
+usage: demo_cli.py [-h] [-e ENC_MODEL_FPATH] [-s SYN_MODEL_DIR]
+                   [-v VOC_MODEL_FPATH] [-o OUT_DIR] [--low_mem] [--no_sound]
+
+命令行执行的Demo。
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -e ENC_MODEL_FPATH, --enc_model_fpath ENC_MODEL_FPATH
+                        Path to a saved encoder (default:
+                        ../models/encoder/saved_models/ge2e_pretrained.pt)
+  -s SYN_MODEL_DIR, --syn_model_dir SYN_MODEL_DIR
+                        Directory containing the synthesizer model (default:
+                        ../models/synthesizer/saved_models/logs-
+                        syne/checkpoints)
+  -v VOC_MODEL_FPATH, --voc_model_fpath VOC_MODEL_FPATH
+                        Path to a saved vocoder (default: ../models/vocoder/sa
+                        ved_models/melgan/melgan_multi_speaker.pt)
+  -o OUT_DIR, --out_dir OUT_DIR
+                        Path to a saved vocoder (default: ../data/outs)
+  --low_mem             If True, the memory used by the synthesizer will be
+                        freed after each use. Adds large overhead but allows
+                        to save some GPU memory for lower-end GPUs. (default:
+                        False)
+  --no_sound            If True, audio won't be played. (default: False)
+
+
+### demo_inference
+usage: demo_inference.py [-h] [--mellotron_path MELLOTRON_PATH]
+                         [--waveglow_path WAVEGLOW_PATH]
+                         [--mellotron_hparams MELLOTRON_HPARAMS]
+                         [--is_simple IS_SIMPLE]
+                         [--waveglow_kwargs WAVEGLOW_KWARGS] [--device DEVICE]
+                         [--sampling_rate SAMPLING_RATE] [--input INPUT]
+                         [--output OUTPUT] [--cuda CUDA]
+
+声音编码器、语音合成器和声码器推理
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --mellotron_path MELLOTRON_PATH
+                        Mellotron model file path
+  --waveglow_path WAVEGLOW_PATH
+                        WaveGlow model file path
+  --mellotron_hparams MELLOTRON_HPARAMS
+                        Mellotron hparams json file path
+  --is_simple IS_SIMPLE
+                        是否简易模式。
+  --waveglow_kwargs WAVEGLOW_KWARGS
+                        Waveglow kwargs json
+  --device DEVICE       Use device to inference
+  --sampling_rate SAMPLING_RATE
+                        Input file path or text
+  --input INPUT         Input file path or text
+  --output OUTPUT       Output file path or dir
+  --cuda CUDA           Set CUDA_VISIBLE_DEVICES
+
+
+### demo_toolbox
+usage: demo_toolbox.py [-h] [-d DATASETS_ROOT] [-e ENC_MODELS_DIR]
+                       [-s SYN_MODELS_DIR] [-v VOC_MODELS_DIR]
+                       [-t TOOLBOX_FILES_DIR] [--low_mem]
+
+可视化分析的Demo。
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d DATASETS_ROOT, --datasets_root DATASETS_ROOT
+                        Path to the directory containing your datasets.
+                        (default: ../data/samples)
+  -e ENC_MODELS_DIR, --enc_models_dir ENC_MODELS_DIR
+                        Directory containing saved encoder models (default:
+                        ../models/encoder/saved_models)
+  -s SYN_MODELS_DIR, --syn_models_dir SYN_MODELS_DIR
+                        Directory containing saved synthesizer models
+                        (default: ../models/synthesizer/saved_models)
+  -v VOC_MODELS_DIR, --voc_models_dir VOC_MODELS_DIR
+                        Directory containing saved vocoder models (default:
+                        ../models/vocoder/saved_models)
+  -t TOOLBOX_FILES_DIR, --toolbox_files_dir TOOLBOX_FILES_DIR
+                        Directory containing saved toolbox files (default:
+                        ../models/toolbox/saved_files)
+  --low_mem             If True, the memory used by the synthesizer will be
+                        freed after each use. Adds large overhead but allows
+                        to save some GPU memory for lower-end GPUs. (default:
+                        False)
+
+
+### encoder_preprocess
+usage: encoder_preprocess.py [-h] [-o OUT_DIR] [-d DATASETS] [-s]
+                             datasets_root
+
+Preprocesses audio files from datasets, encodes them as mel spectrograms and writes them to the disk. This will allow you to train the encoder. The datasets required are at least one of VoxCeleb1, VoxCeleb2 and LibriSpeech. Ideally, you should have all three. You should extract them as they are after having downloaded them and put them in a same directory, e.g.:
+-[datasets_root]
+  -LibriSpeech
+    -train-other-500
+  -VoxCeleb1
+    -wav
+    -vox1_meta.csv
+  -VoxCeleb2
+    -dev
+
+positional arguments:
+  datasets_root         Path to the directory containing your LibriSpeech/TTS
+                        and VoxCeleb datasets.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUT_DIR, --out_dir OUT_DIR
+                        Path to the output directory that will contain the mel
+                        spectrograms. If left out, defaults to
+                        <datasets_root>/SV2TTS/encoder/
+  -d DATASETS, --datasets DATASETS
+                        Comma-separated list of the name of the datasets you
+                        want to preprocess. Only the train set of these
+                        datasets will be used. Possible names:
+                        librispeech_other, voxceleb1, voxceleb2. (default:
+                        librispeech_other,voxceleb1,voxceleb2)
+  -s, --skip_existing   Whether to skip existing output files with the same
+                        name. Useful if this script was interrupted. (default:
+                        False)
+
+
+### encoder_train
+usage: encoder_train.py [-h] [-m MODELS_DIR] [-v VIS_EVERY] [-u UMAP_EVERY]
+                        [-s SAVE_EVERY] [-b BACKUP_EVERY] [-f]
+                        [--visdom_server VISDOM_SERVER] [--no_visdom]
+                        run_id clean_data_root
+
+Trains the speaker encoder. You must have run encoder_preprocess.py first.
+
+positional arguments:
+  run_id                Name for this model instance. If a model state from
+                        the same run ID was previously saved, the training
+                        will restart from there. Pass -f to overwrite saved
+                        states and restart from scratch.
+  clean_data_root       Path to the output directory of encoder_preprocess.py.
+                        If you left the default output directory when
+                        preprocessing, it should be
+                        <datasets_root>/SV2TTS/encoder/.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODELS_DIR, --models_dir MODELS_DIR
+                        Path to the output directory that will contain the
+                        saved model weights, as well as backups of those
+                        weights and plots generated during training. (default:
+                        encoder/saved_models/)
+  -v VIS_EVERY, --vis_every VIS_EVERY
+                        Number of steps between updates of the loss and the
+                        plots. (default: 10)
+  -u UMAP_EVERY, --umap_every UMAP_EVERY
+                        Number of steps between updates of the umap
+                        projection. Set to 0 to never update the projections.
+                        (default: 100)
+  -s SAVE_EVERY, --save_every SAVE_EVERY
+                        Number of steps between updates of the model on the
+                        disk. Set to 0 to never save the model. (default: 500)
+  -b BACKUP_EVERY, --backup_every BACKUP_EVERY
+                        Number of steps between backups of the model. Set to 0
+                        to never make backups of the model. (default: 7500)
+  -f, --force_restart   Do not load any saved model. (default: False)
+  --visdom_server VISDOM_SERVER
+  --no_visdom           Disable visdom. (default: False)
+
+
+### makefile
+
+
+### melgan_inference
+usage: melgan_inference.py [-h] [-i FOLDER] [-o SAVE_PATH] [-m LOAD_PATH]
+                           [--args_path ARGS_PATH] [--mode MODE]
+                           [--n_samples N_SAMPLES]
+                           [--save_model_path SAVE_MODEL_PATH] [--cuda CUDA]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i FOLDER, --folder FOLDER
+                        输入音频文件的目录路径
+  -o SAVE_PATH, --save_path SAVE_PATH
+                        输出生成语音的目录路径
+  -m LOAD_PATH, --load_path LOAD_PATH
+                        模型路径
+  --args_path ARGS_PATH
+                        设置模型参数的文件
+  --mode MODE           模型模式
+  --n_samples N_SAMPLES
+                        需要实验多少个音频
+  --save_model_path SAVE_MODEL_PATH
+                        保存模型为可以直接torch.load的格式
+  --cuda CUDA           设置CUDA_VISIBLE_DEVICES
+
+
+### melgan_train
+usage: melgan_train.py [-h] [-i DATA_PATH] [-o SAVE_PATH]
+                       [--load_path LOAD_PATH] [--start_step START_STEP]
+                       [--dataloader_num_workers DATALOADER_NUM_WORKERS]
+                       [--n_mel_channels N_MEL_CHANNELS] [--ngf NGF]
+                       [--n_residual_layers N_RESIDUAL_LAYERS] [--ndf NDF]
+                       [--num_D NUM_D] [--n_layers_D N_LAYERS_D]
+                       [--downsamp_factor DOWNSAMP_FACTOR]
+                       [--lambda_feat LAMBDA_FEAT] [--cond_disc]
+                       [--batch_size BATCH_SIZE] [--seq_len SEQ_LEN]
+                       [--epochs EPOCHS] [--log_interval LOG_INTERVAL]
+                       [--save_interval SAVE_INTERVAL]
+                       [--n_test_samples N_TEST_SAMPLES]
+                       [--sample_rate SAMPLE_RATE] [--mode MODE]
+                       [--ratios RATIOS] [--cuda CUDA]
+
+训练MelGAN声码器模型。
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i DATA_PATH, --data_path DATA_PATH
+                        metadata path (default: ../data/samples/metadata.csv)
+  -o SAVE_PATH, --save_path SAVE_PATH
+                        your model save dir (default:
+                        ../models/melgan/samples)
+  --load_path LOAD_PATH
+                        pretrained generator model path (default: None)
+  --start_step START_STEP
+  --dataloader_num_workers DATALOADER_NUM_WORKERS
+  --n_mel_channels N_MEL_CHANNELS
+  --ngf NGF
+  --n_residual_layers N_RESIDUAL_LAYERS
+  --ndf NDF
+  --num_D NUM_D
+  --n_layers_D N_LAYERS_D
+  --downsamp_factor DOWNSAMP_FACTOR
+  --lambda_feat LAMBDA_FEAT
+  --cond_disc
+  --batch_size BATCH_SIZE
+  --seq_len SEQ_LEN
+  --epochs EPOCHS
+  --log_interval LOG_INTERVAL
+  --save_interval SAVE_INTERVAL
+  --n_test_samples N_TEST_SAMPLES
+  --sample_rate SAMPLE_RATE
+  --mode MODE
+  --ratios RATIOS
+  --cuda CUDA           设置CUDA_VISIBLE_DEVICES (default: 0)
+
+
+### mellotron_inference
+usage: mellotron_inference.py [-h] [-m CHECKPOINT_PATH]
+                              [--is_simple IS_SIMPLE] [-s SPEAKER_PATH]
+                              [-a AUDIO_PATH] [-t TEXT_PATH] [-o OUT_DIR]
+                              [-p PLAY] [--n_gpus N_GPUS]
+                              [--hparams_path HPARAMS_PATH]
+                              [-e ENCODER_MODEL_FPATH]
+                              [--save_model_path SAVE_MODEL_PATH]
+                              [--cuda CUDA]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m CHECKPOINT_PATH, --checkpoint_path CHECKPOINT_PATH
+                        模型路径。
+  --is_simple IS_SIMPLE
+                        是否简易模式。
+  -s SPEAKER_PATH, --speaker_path SPEAKER_PATH
+                        发音人映射表路径。
+  -a AUDIO_PATH, --audio_path AUDIO_PATH
+                        参考音频路径。
+  -t TEXT_PATH, --text_path TEXT_PATH
+                        文本路径。
+  -o OUT_DIR, --out_dir OUT_DIR
+                        保存合成的数据路径。
+  -p PLAY, --play PLAY  是否合成语音后自动播放语音。
+  --n_gpus N_GPUS       number of gpus
+  --hparams_path HPARAMS_PATH
+                        comma separated name=value pairs
+  -e ENCODER_MODEL_FPATH, --encoder_model_fpath ENCODER_MODEL_FPATH
+                        Path your trained encoder model.
+  --save_model_path SAVE_MODEL_PATH
+                        保存模型为可以直接torch.load的格式
+  --cuda CUDA           设置CUDA_VISIBLE_DEVICES
+
+
+### mellotron_train
+usage: mellotron_train.py [-h] [-i INPUT_DIRECTORY] [-o OUTPUT_DIRECTORY]
+                          [-l LOG_DIRECTORY] [-c CHECKPOINT_PATH]
+                          [--warm_start] [--n_gpus N_GPUS] [--rank RANK]
+                          [--group_name GROUP_NAME]
+                          [--hparams_json HPARAMS_JSON]
+                          [--hparams_level HPARAMS_LEVEL] [--cuda CUDA]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i INPUT_DIRECTORY, --input_directory INPUT_DIRECTORY
+                        directory to save checkpoints
+  -o OUTPUT_DIRECTORY, --output_directory OUTPUT_DIRECTORY
+                        directory to save checkpoints
+  -l LOG_DIRECTORY, --log_directory LOG_DIRECTORY
+                        directory to save tensorboard logs
+  -c CHECKPOINT_PATH, --checkpoint_path CHECKPOINT_PATH
+                        checkpoint path
+  --warm_start          load model weights only, ignore specified layers
+  --n_gpus N_GPUS       number of gpus
+  --rank RANK           rank of current gpu
+  --group_name GROUP_NAME
+                        Distributed group name
+  --hparams_json HPARAMS_JSON
+                        comma separated name=value pairs
+  --hparams_level HPARAMS_LEVEL
+                        hparams scale
+  --cuda CUDA           设置CUDA_VISIBLE_DEVICES
+
+
+### mm_inference
+usage: mm_inference.py [-h] [-s MELLOTRON_MODEL_FPATH]
+                       [-e ENCODER_MODEL_FPATH] [-v MELGAN_MODEL_FPATH]
+                       [-o OUT_DIR] [-p PLAY] [--n_gpus N_GPUS] [--cuda CUDA]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s MELLOTRON_MODEL_FPATH, --mellotron_model_fpath MELLOTRON_MODEL_FPATH
+                        模型路径。
+  -e ENCODER_MODEL_FPATH, --encoder_model_fpath ENCODER_MODEL_FPATH
+                        Path your trained encoder model.
+  -v MELGAN_MODEL_FPATH, --melgan_model_fpath MELGAN_MODEL_FPATH
+                        Path your trained encoder model.
+  -o OUT_DIR, --out_dir OUT_DIR
+                        保存合成的数据路径。
+  -p PLAY, --play PLAY  是否合成语音后自动播放语音。
+  --n_gpus N_GPUS       number of gpus
+  --cuda CUDA           设置CUDA_VISIBLE_DEVICES
+
+
+### synthesizer_preprocess_audio
+usage: synthesizer_preprocess_audio.py [-h] [--datasets_root DATASETS_ROOT]
+                                       [--datasets DATASETS] [-o OUT_DIR]
+                                       [-n N_PROCESSES] [-s SKIP_EXISTING]
+                                       [--hparams HPARAMS]
+
+把语音信号转为频谱等模型训练需要的数据。
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --datasets_root DATASETS_ROOT
+                        Path to the directory containing your datasets.
+                        (default: ..\data)
+  --datasets DATASETS   Path to the directory containing your datasets.
+                        (default: samples)
+  -o OUT_DIR, --out_dir OUT_DIR
+                        Path to the output directory that will contain the mel
+                        spectrograms, the audios and the embeds. Defaults to
+                        <datasets_root>/SV2TTS/synthesizer/
+  -n N_PROCESSES, --n_processes N_PROCESSES
+                        Number of processes in parallel. (default: 0)
+  -s SKIP_EXISTING, --skip_existing SKIP_EXISTING
+                        Whether to overwrite existing files with the same
+                        name. Useful if the preprocessing was interrupted.
+                        (default: True)
+  --hparams HPARAMS     Hyperparameter overrides as a json string, for
+                        example: '"key1":123,"key2":true' (default: )
+
+
+### synthesizer_preprocess_embeds
+usage: synthesizer_preprocess_embeds.py [-h]
+                                        [--synthesizer_root SYNTHESIZER_ROOT]
+                                        [-e ENCODER_MODEL_FPATH]
+                                        [-n N_PROCESSES] [--hparams HPARAMS]
+
+把语音信号转为语音表示向量。
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --synthesizer_root SYNTHESIZER_ROOT
+                        Path to the synthesizer training data that contains
+                        the audios and the train.txt file. If you let
+                        everything as default, it should be
+                        <datasets_root>/SV2TTS/synthesizer/. (default:
+                        ..\data\SV2TTS\synthesizer)
+  -e ENCODER_MODEL_FPATH, --encoder_model_fpath ENCODER_MODEL_FPATH
+                        Path your trained encoder model. (default:
+                        ../models/encoder/saved_models/ge2e_pretrained.pt)
+  -n N_PROCESSES, --n_processes N_PROCESSES
+                        Number of parallel processes. An encoder is created
+                        for each, so you may need to lower this value on GPUs
+                        with low memory. Set it to 1 if CUDA is unhappy.
+                        (default: 0)
+  --hparams HPARAMS     Hyperparameter overrides as a json string, for
+                        example: '"key1":123,"key2":true' (default: )
+
+
+### synthesizer_train
+usage: synthesizer_train.py [-h] [--name NAME]
+                            [--synthesizer_root SYNTHESIZER_ROOT]
+                            [-m MODELS_DIR] [--mode MODE] [--GTA GTA]
+                            [--restore RESTORE]
+                            [--summary_interval SUMMARY_INTERVAL]
+                            [--embedding_interval EMBEDDING_INTERVAL]
+                            [--checkpoint_interval CHECKPOINT_INTERVAL]
+                            [--eval_interval EVAL_INTERVAL]
+                            [--tacotron_train_steps TACOTRON_TRAIN_STEPS]
+                            [--tf_log_level TF_LOG_LEVEL]
+                            [--slack_url SLACK_URL] [--hparams HPARAMS]
+
+训练语音合成器模型。
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --name NAME           Name of the run and of the logging directory.
+                        (default: synz)
+  --synthesizer_root SYNTHESIZER_ROOT
+                        Path to the synthesizer training data that contains
+                        the audios and the train.txt file. If you let
+                        everything as default, it should be
+                        <datasets_root>/SV2TTS/synthesizer/. (default:
+                        ../data/SV2TTS/synthesizer)
+  -m MODELS_DIR, --models_dir MODELS_DIR
+                        Path to the output directory that will contain the
+                        saved model weights and the logs. (default:
+                        ../models/synthesizer/saved_models/)
+  --mode MODE           mode for synthesis of tacotron after training
+                        (default: synthesis)
+  --GTA GTA             Ground truth aligned synthesis, defaults to True, only
+                        considered in Tacotron synthesis mode (default: True)
+  --restore RESTORE     Set this to False to do a fresh training (default:
+                        True)
+  --summary_interval SUMMARY_INTERVAL
+                        Steps between running summary ops (default: 100)
+  --embedding_interval EMBEDDING_INTERVAL
+                        Steps between updating embeddings projection
+                        visualization (default: 100)
+  --checkpoint_interval CHECKPOINT_INTERVAL
+                        Steps between writing checkpoints (default: 1000)
+  --eval_interval EVAL_INTERVAL
+                        Steps between eval on test data (default: 100)
+  --tacotron_train_steps TACOTRON_TRAIN_STEPS
+                        total number of tacotron training steps (default:
+                        500000)
+  --tf_log_level TF_LOG_LEVEL
+                        Tensorflow C++ log level. (default: 1)
+  --slack_url SLACK_URL
+                        slack webhook notification destination link (default:
+                        None)
+  --hparams HPARAMS     Hyperparameter overrides as a json string, for
+                        example: '"key1":123,"key2":true' (default: )
+
+
+### vocoder_preprocess
+usage: vocoder_preprocess.py [-h] [--model_dir MODEL_DIR] [-i IN_DIR]
+                             [-o OUT_DIR] [--hparams HPARAMS]
+                             datasets_root
+
+Creates ground-truth aligned (GTA) spectrograms from the vocoder.
+
+positional arguments:
+  datasets_root         Path to the directory containing your SV2TTS
+                        directory. If you specify both --in_dir and --out_dir,
+                        this argument won't be used.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --model_dir MODEL_DIR
+                        Path to the pretrained model directory. (default:
+                        ../models/synthesizer/saved_models/loge/)
+  -i IN_DIR, --in_dir IN_DIR
+                        Path to the synthesizer directory that contains the
+                        mel spectrograms, the wavs and the embeds. Defaults to
+                        <datasets_root>/SV2TTS/synthesizer/.
+  -o OUT_DIR, --out_dir OUT_DIR
+                        Path to the output vocoder directory that will contain
+                        the ground truth aligned mel spectrograms. Defaults to
+                        <datasets_root>/SV2TTS/vocoder/.
+  --hparams HPARAMS     Hyperparameter overrides as a comma-separated list of
+                        name=value pairs (default: )
+
+
+### vocoder_train
+usage: vocoder_train.py [-h] [--syn_dir SYN_DIR] [--voc_dir VOC_DIR]
+                        [-m MODELS_DIR] [-g] [-s SAVE_EVERY] [-b BACKUP_EVERY]
+                        [-f]
+                        run_id datasets_root
+
+Trains the vocoder from the synthesizer audios and the GTA synthesized mels,
+or ground truth mels.
+
+positional arguments:
+  run_id                Name for this model instance. If a model state from
+                        the same run ID was previously saved, the training
+                        will restart from there. Pass -f to overwrite saved
+                        states and restart from scratch.
+  datasets_root         Path to the directory containing your SV2TTS
+                        directory. Specifying --syn_dir or --voc_dir will take
+                        priority over this argument.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --syn_dir SYN_DIR     Path to the synthesizer directory that contains the
+                        ground truth mel spectrograms, the wavs and the
+                        embeds. Defaults to
+                        <datasets_root>/SV2TTS/synthesizer/.
+  --voc_dir VOC_DIR     Path to the vocoder directory that contains the GTA
+                        synthesized mel spectrograms. Defaults to
+                        <datasets_root>/SV2TTS/vocoder/. Unused if
+                        --ground_truth is passed.
+  -m MODELS_DIR, --models_dir MODELS_DIR
+                        Path to the directory that will contain the saved
+                        model weights, as well as backups of those weights and
+                        wavs generated during training. (default:
+                        vocoder/saved_models/)
+  -g, --ground_truth    Train on ground truth spectrograms
+                        (<datasets_root>/SV2TTS/synthesizer/mels). (default:
+                        False)
+  -s SAVE_EVERY, --save_every SAVE_EVERY
+                        Number of steps between updates of the model on the
+                        disk. Set to 0 to never save the model. (default:
+                        1000)
+  -b BACKUP_EVERY, --backup_every BACKUP_EVERY
+                        Number of steps between backups of the model. Set to 0
+                        to never make backups of the model. (default: 25000)
+  -f, --force_restart   Do not load any saved model and restart from scratch.
+                        (default: False)
+
+
+### waveglow_inference
+usage: waveglow_inference.py [-h] [-w WAVEGLOW_PATH] [--is_simple IS_SIMPLE]
+                             [-i INPUT_PATH] [-o OUTPUT_PATH] [-c CONFIG_PATH]
+                             [--kwargs KWARGS] [--cuda CUDA]
+                             [--save_model_path SAVE_MODEL_PATH]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -w WAVEGLOW_PATH, --waveglow_path WAVEGLOW_PATH
+                        Path to waveglow decoder checkpoint with model
+  --is_simple IS_SIMPLE
+                        是否简易模式。
+  -i INPUT_PATH, --input_path INPUT_PATH
+  -o OUTPUT_PATH, --output_path OUTPUT_PATH
+  -c CONFIG_PATH, --config_path CONFIG_PATH
+  --kwargs KWARGS       Waveglow kwargs json
+  --cuda CUDA           Set CUDA_VISIBLE_DEVICES
+  --save_model_path SAVE_MODEL_PATH
+                        Save model for torch load
+
+
+### waveglow_train
+usage: waveglow_train.py [-h] [-c CONFIG] [-r RANK] [-g GROUP_NAME]
+                         [--cuda CUDA]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c CONFIG, --config CONFIG
+                        JSON file for configuration
+  -r RANK, --rank RANK  rank of process for distributed
+  -g GROUP_NAME, --group_name GROUP_NAME
+                        name of group for distributed
+  --cuda CUDA           Set CUDA_VISIBLE_DEVICES
+
+
