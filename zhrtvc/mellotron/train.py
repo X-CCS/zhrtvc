@@ -151,7 +151,7 @@ def validate(model, criterion, valset, iteration, batch_size, n_gpus,
                                 pin_memory=False, collate_fn=collate_fn)  # shuffle=False,
 
         val_loss = 0.0
-        for i, batch in enumerate(val_loader):
+        for i, batch in enumerate(tqdm(val_loader, 'validate', ncols=100)):
             x, y = model.parse_batch(batch)  # y: 2部分
             # x: (text_padded, input_lengths, mel_padded, max_len, output_lengths, speaker_ids, f0_padded),
             # y: (mel_padded, gate_padded)

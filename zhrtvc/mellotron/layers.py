@@ -99,7 +99,7 @@ class TacotronSTFT(torch.nn.Module):
         mel_output = self.spectral_normalize(mel_output)
         return mel_output
 
-    def griffin_lim_(self, x, n_iters=60):
+    def griffin_lim(self, x, n_iters=5):
         mel_decompress = self.spectral_de_normalize(x)
         mel_decompress = mel_decompress.transpose(1, 2).data.cpu()
         spec_from_mel_scaling = 100
@@ -113,7 +113,7 @@ class TacotronSTFT(torch.nn.Module):
         wav_outputs = griffin_lim(torch.autograd.Variable(mel_batch[:, :, :-1]), self.stft_fn, n_iters)
         return wav_outputs
 
-    def griffin_lim(self, x, n_iters=5, denoiser_mode='zeros', denoiser_strength=0):
+    def griffin_lim_denoiser(self, x, n_iters=5, denoiser_mode='zeros', denoiser_strength=0):
         wav_outputs = self.griffin_lim_(x, n_iters=n_iters)
         if self.denoiser_mode != denoiser_mode or self.denoiser is None:
             voc = lambda x: self.griffin_lim_(x, n_iters=n_iters)
