@@ -232,6 +232,7 @@ def train(input_directory, output_directory, log_directory, checkpoint_path, war
     """
     if hparams.distributed_run:
         init_distributed(hparams, n_gpus, rank, group_name)
+        print("用到多GPU")
 
     torch.manual_seed(hparams.seed)
     # torch.cuda.manual_seed(hparams.seed)

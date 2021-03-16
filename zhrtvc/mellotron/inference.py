@@ -5,6 +5,7 @@
 demo_cli
 """
 from pathlib import Path
+
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -131,13 +132,19 @@ def generate_mel_batch(model, inpath, batch_size, hparams, **kwargs):
 class MellotronSynthesizer():
     def __init__(self, model_path, speakers_path, hparams_path, texts_path, device=_device):
         self.device = device
-
+        # print("hparams_path文件:",hparams_path)
+        hparams_path = "/home/project/zhrtvc/models/mellotron/kuangdd-rtvc/metadata/hparams.json"
         args_hparams = open(hparams_path, encoding='utf8').read()
         self.hparams = create_hparams(args_hparams)
 
         self.model = load_model(self.hparams).to(self.device).eval()
+        # print("model_path文件:",model_path)
+        # self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+        # print(torch.load(model_path, map_location=self.device)['state_dict'])
+        # print(self.model)
         self.model.load_state_dict(torch.load(model_path, map_location=self.device)['state_dict'])
 
+        # summary(self.model)
         self.speakers = json.load(open(speakers_path, encoding='utf8'))
         self.texts = [w.strip() for w in open(texts_path, encoding='utf8')]
         self.texts_path = texts_path

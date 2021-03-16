@@ -2,9 +2,12 @@ import sys
 import os
 import argparse
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    # ../data/samples/metadata.csv
+    # /home/project/data/zhvoice/metadata.csv
     parser.add_argument('-i', '--input_directory', type=str, default=r'../data/samples/metadata.csv',
                         help='directory to save checkpoints')
     parser.add_argument('-o', '--output_directory', type=str, default=r"../models/mellotron/samples",
@@ -15,18 +18,19 @@ def parse_args():
                         required=False, help='checkpoint path')
     parser.add_argument('--warm_start', action='store_true',
                         help='load model weights only, ignore specified layers')
-    parser.add_argument('--n_gpus', type=int, default=1,
+    parser.add_argument('--n_gpus', type=int, default=2,
                         required=False, help='number of gpus')
     parser.add_argument('--rank', type=int, default=0,
                         required=False, help='rank of current gpu')
     parser.add_argument('--group_name', type=str, default='group_name',
                         required=False, help='Distributed group name')
+    # {"batch_size":4,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":0}
     parser.add_argument('--hparams_json', type=str,
-                        default='{"batch_size":4,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":0}',
+                        default='{"batch_size":16,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":0}',
                         required=False, help='comma separated name=value pairs')
-    parser.add_argument('--hparams_level', type=int, default=2,
+    parser.add_argument('--hparams_level', type=int, default=1,
                         required=False, help='hparams scale')
-    parser.add_argument("--cuda", type=str, default='0,1,2,3,4,5,6,7,8,9',
+    parser.add_argument("--cuda", type=str, default='0,1',
                         help='设置CUDA_VISIBLE_DEVICES')
 
     args = parser.parse_args()
@@ -37,6 +41,7 @@ def parse_args():
 args = parse_args()
 
 os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
 import yaml
 import torch
