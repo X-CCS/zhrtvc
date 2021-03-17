@@ -31,10 +31,11 @@ def load_model(weights_fpath: Path, device=None):
         _device = torch.device(device)
     _model = SpeakerEncoder(_device, torch.device("cpu"))
     weights_fpath = Path(weights_fpath)
+    weights_fpath = "/home/project/zhrtvc/models-gmw/models/encoder/saved_models/ge2e_pretrained.pt"
     checkpoint = torch.load(weights_fpath, map_location=_device.type)
     _model.load_state_dict(checkpoint["model_state"])
     _model.eval()
-    print("Loaded encoder \"%s\" trained to step %d" % (weights_fpath.name, checkpoint["step"]))
+    print("Loaded encoder \"%s\" trained to step %d" % (Path(weights_fpath).name, checkpoint["step"])) # 有错误屏蔽掉
 
 
 def is_loaded():

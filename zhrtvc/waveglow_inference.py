@@ -58,8 +58,9 @@ def main(input_path, waveglow_path, config_path, output_path, save_model_path, i
     denoiser_strength = kwargs.get('denoiser_strength', 0)
     sigma = kwargs.get('sigma', 1.0)
 
-    waveglow = torch.load(waveglow_path)['model']
-    waveglow = waveglow.remove_weightnorm(waveglow)
+    # waveglow = torch.load(waveglow_path)['model'] # 原先
+    # waveglow = torch.load(waveglow_path)['model']
+    # waveglow = waveglow.remove_weightnorm(waveglow) # 
     waveglow.cuda().eval()
     if save_model_path:
         torch.save(waveglow, save_model_path)

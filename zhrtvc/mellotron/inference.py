@@ -48,7 +48,8 @@ def load_mellotron_model(model_path: Path, hparams_path='', device=None):
         hparams = json.load(open(hparams_path, encoding='utf8'))
     hparams = Dict2Obj(hparams)
     _model = load_model(hparams).to(device).eval()
-    _model.load_state_dict(torch.load(model_path, map_location=device)['state_dict'])
+    # _model.load_state_dict(torch.load(model_path, map_location=device)['state_dict'])# 原先
+    _model.load_state_dict(torch.load(model_path, map_location=device).state_dict())
 
 
 def load_mellotron_torch(model_path, device=None):
@@ -133,7 +134,7 @@ class MellotronSynthesizer():
     def __init__(self, model_path, speakers_path, hparams_path, texts_path, device=_device):
         self.device = device
         # print("hparams_path文件:",hparams_path)
-        hparams_path = "/home/project/zhrtvc/models/mellotron/kuangdd-rtvc/metadata/hparams.json"
+        hparams_path = "/home/project/zhrtvc/models-gmw/models/mellotron/kuangdd-rtvc/metadata/hparams.json"
         args_hparams = open(hparams_path, encoding='utf8').read()
         self.hparams = create_hparams(args_hparams)
 
@@ -142,10 +143,13 @@ class MellotronSynthesizer():
         # self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         # print(torch.load(model_path, map_location=self.device)['state_dict'])
         # print(self.model)
-        self.model.load_state_dict(torch.load(model_path, map_location=self.device)['state_dict'])
+        # self.model.load_state_dict(torch.load(model_path, map_location=self.device)['state_dict']) # 原先
+        self.model.load_state_dict(torch.load(model_path, map_location=self.device).state_dict())
 
         # summary(self.model)
+        speakers_path = "/home/project/zhrtvc/models-gmw/models/mellotron/kuangdd-rtvc/metadata/speakers.json" 
         self.speakers = json.load(open(speakers_path, encoding='utf8'))
+        texts_path = "/home/project/zhrtvc/models-gmw/models/mellotron/kuangdd-rtvc/metadata/validation.txt" 
         self.texts = [w.strip() for w in open(texts_path, encoding='utf8')]
         self.texts_path = texts_path
         self.stft = TacotronSTFT(

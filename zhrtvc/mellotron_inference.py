@@ -20,22 +20,23 @@ def parse_args():
     parser = argparse.ArgumentParser()
     # ../models/mellotron/staialbb-rtvc/checkpoint/mellotron-400000.pt
     parser.add_argument('-m', '--checkpoint_path', type=str,
-                        default=r"../models/mellotron/kuangdd-rtvc/mellotron.kuangdd-rtvc.pt",
+                        default=r"/home/project/zhrtvc/models-gmw/models/mellotron/kuangdd-rtvc/mellotron.kuangdd-rtvc.pt",
                         help='模型路径。')
+    # 1
     parser.add_argument('--is_simple', type=int, default=1,
                         help='是否简易模式。')
     # ../models/mellotron/samples/metadata/speakers.json
     parser.add_argument('-s', '--speaker_path', type=str,
-                        default=r"../models/mellotron/kuangdd-rtvc/metadata/speakers.json",
+                        default=r"/home/project/zhrtvc/models-gmw/models/mellotron/kuangdd-rtvc/metadata/speakers.json",
                         help='发音人映射表路径。')
     parser.add_argument('-a', '--audio_path', type=str,
-                        default=r"../data/samples/wav",
+                        default=r"/home/project/zhrtvc/data/wav",
                         help='参考音频路径。')
     # ../models/mellotron/samples/metadata/validation.txt
     parser.add_argument('-t', '--text_path', type=str,
-                        default=r"../models/mellotron/kuangdd-rtvc/metadata/validation.txt",
+                        default=r"/home/project/zhrtvc/models-gmw/models/mellotron/kuangdd-rtvc/metadata/validation.txt",
                         help='文本路径。')
-    parser.add_argument("-o", "--out_dir", type=Path, default=r"../models/mellotron/samples/test/mellotron-000000",
+    parser.add_argument("-o", "--out_dir", type=Path, default=r"/home/project/zhrtvc/data/test/",
                         help='保存合成的数据路径。')
     parser.add_argument("-p", "--play", type=int, default=0,
                         help='是否合成语音后自动播放语音。')
@@ -43,16 +44,16 @@ def parse_args():
                         required=False, help='number of gpus')
     # ../models/mellotron/samples/metadata/hparams.json
     parser.add_argument('--hparams_path', type=str,
-                        default=r"../models/mellotron/kuangdd-rtvc/metadata/hparams.json",
+                        default=r"/home/project/zhrtvc/models-gmw/models/mellotron/kuangdd-rtvc/metadata/hparams.json",
                         required=False, help='comma separated name=value pairs')
     # ../models/encoder/saved_models/ge2e_pretrained.pt
     parser.add_argument("-e", "--encoder_model_fpath", type=Path,
-                        default=r"../models/encoder/saved_models/ge2e_pretrained.pt",
+                        default=r"/home/project/zhrtvc/models-gmw/models/encoder/saved_models/ge2e_pretrained.pt",
                         help="Path your trained encoder model.")
     parser.add_argument("--save_model_path", type=str,
-                        default=r"../models/mellotron/samples/mellotron-000000.samples.pt",
+                        default=r"/home/project/zhrtvc/models-gmw/models/mellotron/samples/mellotron-000000.samples.pt",
                         help='保存模型为可以直接torch.load的格式')
-    parser.add_argument("--cuda", type=str, default='0,1',
+    parser.add_argument("--cuda", type=str, default='0',
                         help='设置CUDA_VISIBLE_DEVICES')
     args = parser.parse_args()
     return args
@@ -159,14 +160,17 @@ if __name__ == "__main__":
 
     if save_model_path:
         save_model(msyner, save_model_path)
-
+    speakers_path = "/home/project/zhrtvc/models-gmw/models/mellotron/kuangdd-rtvc/metadata/speakers.json"
     speaker_index_dict = json.load(open(speakers_path, encoding='utf8'))
     speaker_name_list = list(speaker_index_dict.keys())
 
     if args.is_simple:
-        example_audio_list = [w.split('\t')[0] for w in convert_input(audio_path)]
-        example_text_list = [w.split('\t')[1] for w in convert_input(audio_path)]
-        example_speaker_list = [w.split('\t')[2] for w in convert_input(audio_path)]
+        print("audio_path路径:",audio_path)
+        audio_path = "/home/project/zhrtvc/models-gmw/models/mellotron/kuangdd-rtvc/metadata/validation.txt"
+        example_audio_list = [str(w).split("\t")[0] for w in convert_input(audio_path)]
+        example_text_list = [str(w).split("\t")[1] for w in convert_input(audio_path)]
+        example_speaker_list = [str(w).split("\t")[2] for w in convert_input(audio_path)]
+
     else:
         example_audio_list = [w.split('\t')[0] for w in convert_input(audio_path)]
         example_text_list = xinqing_texts

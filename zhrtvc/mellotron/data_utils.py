@@ -287,6 +287,7 @@ class TextMelLoader(torch.utils.data.Dataset):
     def get_embed(self, wav):
         # from encoder import inference as encoder
         if not encoder.is_loaded():
+            encoder_model_fpath = "/home/project/zhrtvc/models-gmw/models/encoder/saved_models/ge2e_pretrained.pt"
             encoder.load_model(self.encoder_model_fpath, device='cpu')
             # 用cpu避免以下报错。
             # "RuntimeError: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the ‘spawn’ start method"
