@@ -70,7 +70,9 @@ def load_wav_to_torch(full_path, sr_force=None):
     """
     Loads wavdata into torch array
     """
+    # print("full_path在这里：",full_path)
     data, sampling_rate = librosa.load(full_path, sr=None)
+
     if (sr_force is not None) and (sampling_rate != sr_force):
         data = librosa.resample(data, orig_sr=sampling_rate, target_sr=sr_force)
     # sampling_rate, data = read(full_path)
@@ -171,13 +173,14 @@ if __name__ == "__main__":
     mel2samp = Mel2Samp(**data_config)
 
     filepaths = files_to_list(args.filelist_path)
-
+    print("filepaths这里:",filepaths)
     # Make directory if it doesn't exist
     if not os.path.isdir(args.output_dir):
         os.makedirs(args.output_dir)
         os.chmod(args.output_dir, 0o775)
-
+    
     for filepath in filepaths:
+        print("filepath在这里:",filepath)
         audio, sr = load_wav_to_torch(filepath)
         melspectrogram = mel2samp.get_mel(audio)
         filename = os.path.basename(filepath)

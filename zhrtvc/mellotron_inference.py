@@ -36,6 +36,7 @@ def parse_args():
     parser.add_argument('-t', '--text_path', type=str,
                         default=r"/home/project/zhrtvc/models-gmw/models/mellotron/kuangdd-rtvc/metadata/validation.txt",
                         help='文本路径。')
+    # 这个保存的路径是没有生成效果的，不知道为什么？
     parser.add_argument("-o", "--out_dir", type=Path, default=r"/home/project/zhrtvc/data/test/",
                         help='保存合成的数据路径。')
     parser.add_argument("-p", "--play", type=int, default=0,
@@ -179,7 +180,8 @@ if __name__ == "__main__":
     example_audio_list = np.random.choice(example_audio_list, 10)
     example_text_list = np.random.choice(example_text_list, 10)
     example_speaker_list = np.random.choice(example_speaker_list, 10)
-
+    print("\nexample_audio_list[0] as %s\n\n" % example_audio_list[0])
+    print("\nspeaker_name_list[0] as %s\n\n" % speaker_name_list[0])
     spec = msyner.synthesize(text='你好，欢迎使用语言合成服务。', speaker=speaker_name_list[0], audio=example_audio_list[0])
 
     ## Run a test
@@ -266,7 +268,7 @@ if __name__ == "__main__":
                 fout.write('{}\n'.format(json.dumps(info_dict, ensure_ascii=False)))
 
             num_generated += 1
-            # print("\nSaved output as %s\n\n" % out_path)
+            print("\nSaved output as %s\n\n" % out_path)
             if args.play:
                 aukit.play_audio(out_path, sr=msyner.stft.sampling_rate)
         except Exception as e:
