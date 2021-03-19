@@ -20,7 +20,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
     # ../models/mellotron/staialbb-rtvc/checkpoint/mellotron-400000.pt
     parser.add_argument('-m', '--checkpoint_path', type=str,
+<<<<<<< HEAD
                         default=r"/home/project/zhrtvc/models-gmw/models/mellotron/kuangdd-rtvc/mellotron.kuangdd-rtvc.pt",
+=======
+                        default=r"../models/mellotron/samples/checkpoint/mellotron-000000.pt",
+>>>>>>> e7b4b23b63eb553efe98f5324ab62365c846a877
                         help='模型路径。')
     # 1
     parser.add_argument('--is_simple', type=int, default=1,
