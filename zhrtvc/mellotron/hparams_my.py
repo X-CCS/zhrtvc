@@ -27,7 +27,7 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         ################################
         # Data Parameters             #
         ################################
-        train_mode='train-rtvc',
+        train_mode='train-mspk',
         # f01:用基频，prenet_f0_dim=1。
         # f02:用基频均值填充，prenet_f0_dim=1。
         # f03:用零向量代替基频，prenet_f0_dim=1。
@@ -68,17 +68,17 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         # Model Parameters             #
         ################################
         n_symbols=145,  # len(symbols),
-        symbols_embedding_dim=512, # 128 * level,  # 512,
+        symbols_embedding_dim=128 * level,  # 512,
 
         # Encoder parameters
         encoder_kernel_size=5,
         encoder_n_convolutions=3,
-        encoder_embedding_dim=512,# 128 * level,  # 512,
+        encoder_embedding_dim=128 * level,  # 512,
 
         # Decoder parameters
         n_frames_per_step=1,  # currently only 1 is supported
-        decoder_rnn_dim=1024,#256 * level,  # 1024,
-        prenet_dim=256,# 64 * level,  # 256,
+        decoder_rnn_dim=256 * level,  # 1024,
+        prenet_dim=64 * level,  # 256,
         prenet_f0_n_layers=1,
         prenet_f0_dim=0,  # 1, 如果不启用f0，则设置为0。
         prenet_f0_kernel_size=1,
@@ -91,31 +91,31 @@ def create_hparams(hparams_string=None, verbose=False, level=2):
         p_teacher_forcing=1.0,
 
         # Attention parameters
-        attention_rnn_dim=1024,# 256 * level,  # 1024,
-        attention_dim=128, # 32 * level,  # 128,
+        attention_rnn_dim=256 * level,  # 1024,
+        attention_dim=32 * level,  # 128,
 
         # Location Layer parameters
-        attention_location_n_filters=32,#8 * level,  # 32,
+        attention_location_n_filters=8 * level,  # 32,
         attention_location_kernel_size=31,
 
         # Mel-post processing network parameters
-        postnet_embedding_dim=512, # 128 * level,  # 512,
+        postnet_embedding_dim=128 * level,  # 512,
         postnet_kernel_size=5,
         postnet_n_convolutions=5,
 
         # Speaker embedding
-        n_speakers=256,  # 1000,  # 123 32 # 256 不可随便改
-        # speaker_embedding_dim=32,  # 16 * level,  # 32 * level,  # 128,
-        speaker_embedding_dim=64,  # 16 * level,  # 32 * level,  # 128,
+        n_speakers=32,  # 1000,  # 123
+        speaker_embedding_dim=32,  # 16 * level,  # 32 * level,  # 128,
+        # speaker_embedding_dim=64,  # 16 * level,  # 32 * level,  # 128,
 
         # Reference encoder
         with_gst=False,  # True,
-        ref_enc_filters=[32, 32, 64, 64, 128, 128],# [8 * level, 8 * level, 16 * level, 16 * level, 32 * level, 32 * level],
+        ref_enc_filters=[8 * level, 8 * level, 16 * level, 16 * level, 32 * level, 32 * level],
         # [32, 32, 64, 64, 128, 128],
         ref_enc_size=[3, 3],
         ref_enc_strides=[2, 2],
         ref_enc_pad=[1, 1],
-        ref_enc_gru_size=128,# 32 * level,  # 128,
+        ref_enc_gru_size=32 * level,  # 128,
 
         # Style Token Layer
         token_embedding_size=0,  # 64 * level,  # 256,  # 如果with_gst=False，则手动改为0。

@@ -1,0 +1,208 @@
+FP16 Run: False
+Dynamic Loss Scaling: True
+Distributed Run: False
+cuDNN Enabled: True
+cuDNN Benchmark: False
+--------------------------------------------------
+args:
+checkpoint_path: /home/project/zhrtvc/models-gmw/models/mellotron/kuangdd-rtvc/mellotron.kuangdd-rtvc.pt
+cuda: 0,1
+group_name: group_name
+hparams_json: '{"batch_size":16,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":0}'
+hparams_level: 1
+input_directory: ../data/samples/metadata.csv
+log_directory: tensorboard
+n_gpus: 2
+output_directory: ../models/mellotron/samples
+rank: 0
+warm_start: false
+
+--------------------------------------------------
+hparams:
+attention_dim: 128
+attention_location_kernel_size: 31
+attention_location_n_filters: 32
+attention_rnn_dim: 1024
+batch_size: 16
+cmudict_path: null
+cudnn_benchmark: false
+cudnn_enabled: true
+dataloader_num_workers: 0
+decoder_rnn_dim: 1024
+dist_backend: nccl
+dist_url: tcp://localhost:54321
+distributed_run: false
+dynamic_loss_scaling: true
+encoder_embedding_dim: 512
+encoder_kernel_size: 5
+encoder_model_fpath: /home/project/zhrtvc/models/encoder/saved_models/ge2e_pretrained.pt
+encoder_n_convolutions: 3
+epochs: 1000000
+f0_max: 880
+f0_min: 80
+filter_length: 1024
+fp16_run: false
+gate_threshold: 0.5
+grad_clip_thresh: 1.0
+harm_thresh: 0.25
+hop_length: 256
+ignore_layers:
+- speaker_embedding.weight
+iters_per_checkpoint: 100
+learning_rate: 0.001
+learning_rate_anneal: 50000
+learning_rate_min: 1.0e-05
+mask_padding: true
+max_decoder_steps: 1000
+max_wav_value: 32768.0
+mel_fmax: 8000.0
+mel_fmin: 0.0
+n_frames_per_step: 1
+n_mel_channels: 80
+n_speakers: 256
+n_symbols: 145
+num_heads: 8
+p_arpabet: 1.0
+p_attention_dropout: 0.1
+p_decoder_dropout: 0.1
+p_teacher_forcing: 1.0
+postnet_embedding_dim: 512
+postnet_kernel_size: 5
+postnet_n_convolutions: 5
+prenet_dim: 256
+prenet_f0_dim: 0
+prenet_f0_kernel_size: 1
+prenet_f0_n_layers: 1
+prenet_rms_dim: 0
+prenet_rms_kernel_size: 1
+ref_enc_filters:
+- 32
+- 32
+- 64
+- 64
+- 128
+- 128
+ref_enc_gru_size: 128
+ref_enc_pad:
+- 1
+- 1
+ref_enc_size:
+- 3
+- 3
+ref_enc_strides:
+- 2
+- 2
+sampling_rate: 22050
+seed: 1234
+speaker_embedding_dim: 64
+symbols_embedding_dim: 512
+text_cleaners: hanzi
+token_embedding_size: 0
+token_num: 10
+train_mode: train-rtvc
+use_saved_learning_rate: false
+weight_decay: 1.0e-06
+win_length: 1024
+with_gst: false
+
+Loading checkpoint '/home/project/zhrtvc/models-gmw/models/mellotron/kuangdd-rtvc/mellotron.kuangdd-rtvc.pt'
+checkpoint_dict的内容: Tacotron2(
+  (embedding): Embedding(145, 512)
+  (encoder): Encoder(
+    (convolutions): ModuleList(
+      (0): Sequential(
+        (0): ConvNorm(
+          (conv): Conv1d(512, 512, kernel_size=(5,), stride=(1,), padding=(2,))
+        )
+        (1): BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (1): Sequential(
+        (0): ConvNorm(
+          (conv): Conv1d(512, 512, kernel_size=(5,), stride=(1,), padding=(2,))
+        )
+        (1): BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (2): Sequential(
+        (0): ConvNorm(
+          (conv): Conv1d(512, 512, kernel_size=(5,), stride=(1,), padding=(2,))
+        )
+        (1): BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (lstm): LSTM(512, 256, batch_first=True, bidirectional=True)
+  )
+  (decoder): Decoder(
+    (prenet): Prenet(
+      (layers): ModuleList(
+        (0): LinearNorm(
+          (linear_layer): Linear(in_features=80, out_features=256, bias=False)
+        )
+        (1): LinearNorm(
+          (linear_layer): Linear(in_features=256, out_features=256, bias=False)
+        )
+      )
+    )
+    (attention_rnn): LSTMCell(832, 1024)
+    (attention_layer): Attention(
+      (query_layer): LinearNorm(
+        (linear_layer): Linear(in_features=1024, out_features=128, bias=False)
+      )
+      (memory_layer): LinearNorm(
+        (linear_layer): Linear(in_features=576, out_features=128, bias=False)
+      )
+      (v): LinearNorm(
+        (linear_layer): Linear(in_features=128, out_features=1, bias=False)
+      )
+      (location_layer): LocationLayer(
+        (location_conv): ConvNorm(
+          (conv): Conv1d(2, 32, kernel_size=(31,), stride=(1,), padding=(15,), bias=False)
+        )
+        (location_dense): LinearNorm(
+          (linear_layer): Linear(in_features=32, out_features=128, bias=False)
+        )
+      )
+    )
+    (decoder_rnn): LSTMCell(1600, 1024, bias=1)
+    (linear_projection): LinearNorm(
+      (linear_layer): Linear(in_features=1600, out_features=80, bias=True)
+    )
+    (gate_layer): LinearNorm(
+      (linear_layer): Linear(in_features=1600, out_features=1, bias=True)
+    )
+  )
+  (postnet): Postnet(
+    (convolutions): ModuleList(
+      (0): Sequential(
+        (0): ConvNorm(
+          (conv): Conv1d(80, 512, kernel_size=(5,), stride=(1,), padding=(2,))
+        )
+        (1): BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (1): Sequential(
+        (0): ConvNorm(
+          (conv): Conv1d(512, 512, kernel_size=(5,), stride=(1,), padding=(2,))
+        )
+        (1): BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (2): Sequential(
+        (0): ConvNorm(
+          (conv): Conv1d(512, 512, kernel_size=(5,), stride=(1,), padding=(2,))
+        )
+        (1): BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (3): Sequential(
+        (0): ConvNorm(
+          (conv): Conv1d(512, 512, kernel_size=(5,), stride=(1,), padding=(2,))
+        )
+        (1): BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (4): Sequential(
+        (0): ConvNorm(
+          (conv): Conv1d(512, 80, kernel_size=(5,), stride=(1,), padding=(2,))
+        )
+        (1): BatchNorm1d(80, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+  )
+  (speaker_embedding): Linear(in_features=256, out_features=64, bias=True)
+)

@@ -30,8 +30,48 @@ from .utils import inv_linearspectrogram
 from .plotting_utils import plot_mel_alignment_gate_audio
 from .audio_processing import griffin_lim, dynamic_range_decompression
 from .text.symbols import symbols
+from mellotron.hparams import create_hparams
 
 _device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+# 设置所需的参数
+def parse_args():
+    parser = argparse.ArgumentParser()
+    # ../data/samples/metadata.csv
+    # /home/project/data/zhvoice/metadata.csv
+    parser.add_argument('-i', '--input_directory', type=str, default=r'../data/samples/metadata.csv',
+                        help='directory to save checkpoints')
+    parser.add_argument('-o', '--output_directory', type=str, default=r"../models/mellotron/samples",
+                        help='directory to save checkpoints')
+    parser.add_argument('-l', '--log_directory', type=str, default='tensorboard',
+                        help='directory to save tensorboard logs')
+    # None /home/project/zhrtvc/models/mellotron/samples/checkpoint/mellotron-002800.pt
+    parser.add_argument('-c', '--checkpoint_path', type=str, default=r"/home/project/zhrtvc/models-gmw/models/mellotron/mellotron.kuangdd-rtvc.mellotron.pt",
+                        required=False, help='checkpoint path')
+    parser.add_argument('--warm_start', action='store_true',
+                        help='load model weights only, ignore specified layers')
+    parser.add_argument('--n_gpus', type=int, default=2,
+                        required=False, help='number of gpus')
+    parser.add_argument('--rank', type=int, default=0,
+                        required=False, help='rank of current gpu')
+    parser.add_argument('--group_name', type=str, default='group_name',
+                        required=False, help='Distributed group name')
+    # {"batch_size":4,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":0}
+    parser.add_argument('--hparams_json', type=str,
+                        # default='{"batch_size":16,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":0}',
+                        default='{"batch_size":16,"speaker_embedding_dim": 64,"symbols_embedding_dim": 512,"encoder_embedding_dim": 512,"decoder_rnn_dim": 1024,"prenet_dim": 256,"decoder_rnn_dim": 1024,"prenet_dim": 256,"attention_rnn_dim": 1024,"attention_dim": 128,"attention_location_n_filters": 32,"postnet_embedding_dim": 512,"ref_enc_filters": [32,32,64,64,128,128],"ref_enc_gru_size": 128,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":0}',
+                        required=False, help='comma separated name=value pairs')
+    parser.add_argument('--hparams_level', type=int, default=1,
+                        required=False, help='hparams scale')
+    parser.add_argument("--cuda", type=str, default='0,1',
+                        help='设置CUDA_VISIBLE_DEVICES')
+
+    args = parser.parse_args()
+
+    return args
+
+
+args = parse_args()
 
 
 def json_dump(obj, path):
@@ -106,7 +146,8 @@ def warm_start_model(checkpoint_path, model, ignore_layers):
     assert os.path.isfile(checkpoint_path)
     print("Warm starting model from checkpoint '{}'".format(checkpoint_path))
     checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')
-    model_dict = checkpoint_dict['state_dict']
+    # model_dict = checkpoint_dict['state_dict'] # 原始
+    model_dict = checkpoint_dict.state_dict()
     if len(ignore_layers) > 0:
         model_dict = {k: v for k, v in model_dict.items()
                       if k not in ignore_layers}
@@ -121,10 +162,31 @@ def load_checkpoint(checkpoint_path, model, optimizer):
     assert os.path.isfile(checkpoint_path)
     print("Loading checkpoint '{}'".format(checkpoint_path))
     checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')
-    model.load_state_dict(checkpoint_dict['state_dict'])
-    optimizer.load_state_dict(checkpoint_dict['optimizer'])
-    learning_rate = checkpoint_dict['learning_rate']
-    iteration = checkpoint_dict['iteration']
+    # 显示模型结构
+    # from torchkeras import summary
+    # summary(checkpoint_dict, input_shape=(145,512))
+    # print("checkpoint_dict的内容:",checkpoint_dict)
+    # print("checkpoint_dict的类型:",type(checkpoint_dict))
+    # with open("./checkpoint_dict.txt",'w') as fw:
+    #     fw.write(str(checkpoint_dict))
+
+    # 原始的模型导入不成功
+    # model.load_state_dict(checkpoint_dict['state_dict']) # 原始
+    # learning_rate = checkpoint_dict['learning_rate'] # 原始
+    # iteration = checkpoint_dict['iteration'] # 原始
+    # optimizer.load_state_dict(checkpoint_dict['optimizer']) # 原始
+
+    model.load_state_dict(checkpoint_dict.state_dict())
+    hparams = create_hparams(args.hparams_json, level=args.hparams_level)
+    learning_rate = hparams.learning_rate
+    # print("learning_rate的内容:",learning_rate)
+    
+    iteration = hparams.iters_per_checkpoint
+    # print("iteration的内容:",iteration)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
+                                 weight_decay=hparams.weight_decay)
+    # print("optimizer的内容:",optimizer)
+
     print("Loaded checkpoint '{}' from iteration {}".format(
         checkpoint_path, iteration))
     return model, optimizer, learning_rate, iteration

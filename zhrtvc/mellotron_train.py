@@ -14,7 +14,8 @@ def parse_args():
                         help='directory to save checkpoints')
     parser.add_argument('-l', '--log_directory', type=str, default='tensorboard',
                         help='directory to save tensorboard logs')
-    parser.add_argument('-c', '--checkpoint_path', type=str, default=None,
+    # None /home/project/zhrtvc/models/mellotron/samples/checkpoint/mellotron-002800.pt
+    parser.add_argument('-c', '--checkpoint_path', type=str, default=r"/home/project/zhrtvc/models-gmw/models/mellotron/mellotron.kuangdd-rtvc.mellotron.pt",
                         required=False, help='checkpoint path')
     parser.add_argument('--warm_start', action='store_true',
                         help='load model weights only, ignore specified layers')
@@ -26,7 +27,8 @@ def parse_args():
                         required=False, help='Distributed group name')
     # {"batch_size":4,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":0}
     parser.add_argument('--hparams_json', type=str,
-                        default='{"batch_size":16,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":0}',
+                        # default='{"batch_size":16,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":0}',
+                        default='{"batch_size":16,"speaker_embedding_dim": 64,"symbols_embedding_dim": 512,"encoder_embedding_dim": 512,"decoder_rnn_dim": 1024,"prenet_dim": 256,"decoder_rnn_dim": 1024,"prenet_dim": 256,"attention_rnn_dim": 1024,"attention_dim": 128,"attention_location_n_filters": 32,"postnet_embedding_dim": 512,"ref_enc_filters": [32,32,64,64,128,128],"ref_enc_gru_size": 128,"iters_per_checkpoint":100,"learning_rate":0.001,"dataloader_num_workers":0}',
                         required=False, help='comma separated name=value pairs')
     parser.add_argument('--hparams_level', type=int, default=1,
                         required=False, help='hparams scale')
